@@ -1,5 +1,6 @@
 #include "filterprocessor.h"
 
+#include <cmath>
 #include <complex>
 
 using namespace std;

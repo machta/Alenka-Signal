@@ -7,8 +7,6 @@
 #ifndef OPENCLCONTEXT_H
 #define OPENCLCONTEXT_H
 
-#include "error.h"
-
 #include <CL/cl_gl.h>
 #include <clFFT.h>
 
