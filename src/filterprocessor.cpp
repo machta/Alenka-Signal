@@ -47,7 +47,7 @@ void printBuffer(const std::string& filePath, cl_mem buffer, cl_command_queue qu
 } // namespace
 
 template<class T>
-FilterProcessor<T>::FilterProcessor(int blockLength, int channels, OpenCLContext* context)
+FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
 	: blockLength(blockLength), blockChannels(channels)
 {
 	assert(blockLength%2 == 0);

@@ -7,6 +7,8 @@ option(USE_CL_1_2 "Use OpenCL 1.2" ON)
 set(CMAKE_CXX_STANDARD 11)
 set(<variable> <value>... CACHE <type> <docstring> [FORCE])
 
+add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
+
 if(MSVC)
 	find_path(OPENCL_DIR include/CL/cl_gl.h PATHS "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0" "C:/Program Files (x86)/AMD APP SDK/3.0")
 

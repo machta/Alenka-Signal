@@ -16,7 +16,7 @@ template<class T>
 class FilterProcessor
 {
 public:
-	FilterProcessor(int blockLength, int blockChannels, OpenCLContext* context);
+	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context);
 	~FilterProcessor();
 
 	void process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue);
@@ -44,8 +44,8 @@ public:
 	}
 
 private:
-	int blockLength;
-	int blockChannels;
+	unsigned int blockLength;
+	unsigned int blockChannels;
 
 	int M;
 	bool coefficientsChanged = false;
