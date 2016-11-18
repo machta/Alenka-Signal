@@ -29,11 +29,6 @@ set(INC ${INC} clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
 
 # If you include this library into your project, you will want to link to these libraries.
 set(LIBS_TO_LINK alenka-signal clFFT ${OpenCL_LIBRARIES})
-#if(MSVC)
-#	set(LIBS_TO_LINK alenka-signal ${OPENCL_LIB} ${CLFFT_LIB})
-#else()
-#	set(LIBS_TO_LINK alenka-signal clFFT OpenCL)
-#endif()
 
 # The library.
 if(MSVC)
