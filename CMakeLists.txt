@@ -18,16 +18,17 @@ if(USE_CL_1_2)
 endif()
 
 find_package(OpenCL REQUIRED)
+set(INC ${INC} ${OpenCL_INCLUDE_DIRS})
 
 # First build all the library dependencies.
 set(BUILD_LOADLIBRARIES false)
 set(BUILD_EXAMPLES false)
 set(BUILD_SHARED_LIBS false)
 add_subdirectory(clFFT/src)
-set(INC ${INC} clFFT/src/include)
+set(INC ${INC} clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
 
 # If you include this library into your project, you will want to link to these libraries.
-set(LIBS_TO_LINK alenka-signal clFFT ${OPENCL_LIBRARIES})
+set(LIBS_TO_LINK alenka-signal clFFT ${OpenCL_LIBRARIES})
 #if(MSVC)
 #	set(LIBS_TO_LINK alenka-signal ${OPENCL_LIB} ${CLFFT_LIB})
 #else()
