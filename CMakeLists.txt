@@ -5,7 +5,6 @@ project(Alenka-Signal)
 option(BUILD_TESTS_ALENKA_SIGNAL "Builds unit tests for Alenka-Signal." OFF)
 option(USE_CL_1_2 "Use OpenCL 1.2" ON)
 set(CMAKE_CXX_STANDARD 11)
-set(<variable> <value>... CACHE <type> <docstring> [FORCE])
 
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
 
@@ -27,8 +26,8 @@ set(BUILD_SHARED_LIBS false)
 add_subdirectory(clFFT/src)
 set(INC ${INC} clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
 
-# If you include this library into your project, you will want to link to these libraries.
-set(LIBS_TO_LINK alenka-signal clFFT ${OpenCL_LIBRARIES})
+# If you want to use this library, you need to link to these libraries.
+set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
 
 # The library.
 if(MSVC)
