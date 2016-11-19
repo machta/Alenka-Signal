@@ -12,7 +12,7 @@
 /**
  * @brief This class handles filtering of data blocks.
  */
-template<class T>
+template<class T, bool test>
 class FilterProcessor
 {
 public:
@@ -38,9 +38,14 @@ public:
 		samplesChanged = true;
 		coefficientsChanged = false;
 	}
-	int getDelay()
+	int getDelay() const
 	{
 		return (M - 1)/2;
+	}
+	std::vector<T> getCoefficients() const
+	{
+		assert(test && "Calling this method when not in test mode doesn't make sense.");
+		return coefficients;
 	}
 
 private:

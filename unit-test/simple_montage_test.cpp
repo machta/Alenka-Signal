@@ -2,7 +2,6 @@
 
 #include "montageprocessor.h"
 
-#include <string>
 #include <functional>
 
 using namespace std;
@@ -97,4 +96,3 @@ TEST(simple_montage_test, double)
 {
 	test<double>(&compareDouble);
 }
-

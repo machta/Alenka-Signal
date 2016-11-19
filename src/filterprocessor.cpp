@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <complex>
+#include <type_traits>
 
 using namespace std;
 
@@ -46,8 +47,8 @@ void printBuffer(const std::string& filePath, cl_mem buffer, cl_command_queue qu
 
 } // namespace
 
-template<class T>
-FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
+template<class T, bool test>
+FilterProcessor<T, test>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
 	: blockLength(blockLength), blockChannels(channels)
 {
 	assert(blockLength%2 == 0);
@@ -55,7 +56,17 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 	cl_int err;
 	clfftStatus errFFT;
 
-	OpenCLProgram program(kernels, context);
+	clfftPrecision precision = CLFFT_SINGLE;
+	string kernelsSource;
+
+	if (is_same<double, T>::value)
+	{
+		precision = CLFFT_DOUBLE;
+		kernelsSource = "#define float double\n#define float2 double2\n\n";
+	}
+
+	kernelsSource += kernels;
+	OpenCLProgram program(kernelsSource, context);
 
 	filterKernel = program.createKernel("filter");
 	zeroKernel = program.createKernel("zero");
@@ -67,18 +78,16 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 #endif
 #endif
 
-	filterBuffer = clCreateBuffer(context->getCLContext(), flags, blockLength*sizeof(T), nullptr, &err);
+	filterBuffer = clCreateBuffer(context->getCLContext(), test ? CL_MEM_READ_WRITE : flags, blockLength*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
 	// Construct the fft plans.
 	size_t size = blockLength;
 	size_t bufferDistance = size;
 
-	// TODO: act on precision
-
 	errFFT = clfftCreateDefaultPlan(&fftPlan, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	//clfftSetPlanPrecision(plan, CLFFT_DOUBLE);
+	clfftSetPlanPrecision(fftPlan, precision);
 	clfftSetLayout(fftPlan, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
 	clfftSetResultLocation(fftPlan, CLFFT_INPLACE);
 	clfftSetPlanBatchSize(fftPlan, 1);
@@ -86,7 +95,7 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 
 	errFFT = clfftCreateDefaultPlan(&fftPlanBatch, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	//clfftSetPlanPrecision(plan, CLFFT_DOUBLE);
+	clfftSetPlanPrecision(fftPlanBatch, precision);
 	clfftSetLayout(fftPlanBatch, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
 	clfftSetResultLocation(fftPlanBatch, CLFFT_OUTOFPLACE);
 	clfftSetPlanBatchSize(fftPlanBatch, blockChannels);
@@ -94,7 +103,7 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 
 	errFFT = clfftCreateDefaultPlan(&ifftPlanBatch, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	//clfftSetPlanPrecision(plan, CLFFT_DOUBLE);
+	clfftSetPlanPrecision(ifftPlanBatch, precision);
 	clfftSetLayout(ifftPlanBatch, CLFFT_HERMITIAN_INTERLEAVED, CLFFT_REAL);
 	clfftSetResultLocation(ifftPlanBatch, CLFFT_INPLACE);
 	clfftSetPlanBatchSize(ifftPlanBatch, blockChannels);
@@ -102,15 +111,15 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 
 	errFFT = clfftCreateDefaultPlan(&ifftPlan, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	//clfftSetPlanPrecision(ifftPlan, CLFFT_DOUBLE);
+	clfftSetPlanPrecision(ifftPlan, precision);
 	clfftSetLayout(ifftPlan, CLFFT_HERMITIAN_INTERLEAVED, CLFFT_REAL);
 	clfftSetResultLocation(ifftPlan, CLFFT_INPLACE);
 	clfftSetPlanBatchSize(ifftPlan, 1);
 	//clfftSetPlanDistance(ifftPlan, bufferDistance, bufferDistance/2);
 }
 
-template<class T>
-FilterProcessor<T>::~FilterProcessor()
+template<class T, bool test>
+FilterProcessor<T, test>::~FilterProcessor()
 {
 	cl_int err;
 	err = clReleaseKernel(filterKernel);
@@ -131,8 +140,8 @@ FilterProcessor<T>::~FilterProcessor()
 	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
 }
 
-template<class T>
-void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
+template<class T, bool test>
+void FilterProcessor<T, test>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
 {
 	cl_int err;
 	clfftStatus errFFT;
@@ -152,9 +161,9 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		int cM = 1 + M/2;
 		coefficients.insert(coefficients.begin(), 2*cM, 0);
 
-		for (int i = 0; i < cM; ++i)
+		for (unsigned int i = 0; i < /*cM*/samples.size(); ++i)
 		{
-			assert(i < (int)samples.size());
+			assert(i < /*(int)*/samples.size());
 
 			coefficients[2*i] = samples[i];
 		}
@@ -182,6 +191,12 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		// Compute the iFFT of H to make the FIR filter coefficients h. (eq. 10.2.33)
 		errFFT = clfftEnqueueTransform(ifftPlan, CLFFT_BACKWARD, 1, &queue, 0, nullptr, nullptr, &filterBuffer, nullptr, nullptr);
 		checkClfftErrorCode(errFFT, "clfftEnqueueTransform()");
+
+		if (test)
+		{
+			err = clEnqueueReadBuffer(queue, filterBuffer, CL_TRUE, 0, 2*cM*sizeof(T), coefficients.data(), 0, nullptr, nullptr);
+			checkClErrorCode(err, "clEnqueueReadBuffer()");
+		}
 	}
 
 	if (coefficientsChanged || samplesChanged)
@@ -244,5 +259,7 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 	printBuffer("after_ifft.txt", outBuffer, queue);
 }
 
-template class FilterProcessor<float>;
-//template class FilterProcessor<double>;
+template class FilterProcessor<float, false>;
+template class FilterProcessor<float, true>;
+template class FilterProcessor<double, false>;
+template class FilterProcessor<double, true>;
