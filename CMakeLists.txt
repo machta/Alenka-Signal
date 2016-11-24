@@ -37,11 +37,11 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
 endif()
 
-include_directories(include ${INC})
+include_directories(include ${INC} alglib/src)
 
 if(BUILD_TESTS_ALENKA_SIGNAL)
 	add_subdirectory (unit-test)
 endif()
 
-file(GLOB SRC src/*)
+file(GLOB SRC src/* alglib/src/fasttransforms.cpp alglib/src/interpolation.cpp)
 add_library(alenka-signal ${SRC})

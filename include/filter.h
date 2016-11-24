@@ -1,14 +1,8 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include "openclcontext.h"
-
-#include <cstdio>
 #include <cmath>
 #include <vector>
-
-#include <CL/cl_gl.h>
-#include <clFFT.h>
 
 /**
  * @brief A class for computing FIR filter coefficients.

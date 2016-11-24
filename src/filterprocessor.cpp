@@ -15,6 +15,7 @@ const char* kernels =
 
 void printBuffer(FILE* file, float* data, int n)
 {
+	return;
 	for (int i = 0; i < n; ++i)
 	{
 		fprintf(file, "%f\n", data[i]);
@@ -23,6 +24,7 @@ void printBuffer(FILE* file, float* data, int n)
 
 void printBuffer(const std::string& filePath, cl_mem buffer, cl_command_queue queue)
 {
+	return;
 #ifndef NDEBUG
 	FILE* file = fopen(filePath.c_str(), "w");
 
