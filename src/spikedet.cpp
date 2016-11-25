@@ -1229,11 +1229,15 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 		double temp_elem0 = phat_int[0].front();
 		double temp_elem1 = phat_int[1].front();
 
-		for (i = 0; i < floor(m_settings->m_winsize * m_fs / 2); i++)
-		{
-			phat_int[0].insert(phat_int[0].begin(), temp_elem0);
-			phat_int[1].insert(phat_int[1].begin(), temp_elem1);
-		}
+//		for (i = 0; i < floor(m_settings->m_winsize * m_fs / 2); i++)
+//		{
+//			phat_int[0].insert(phat_int[0].begin(), temp_elem0);
+//			phat_int[1].insert(phat_int[1].begin(), temp_elem1);
+//		}
+		// My optimization: insert constants at one to prevent repeated copying in the vector. Makes is about 2.5x faster.
+		int n = floor(m_settings->m_winsize * m_fs / 2);
+		phat_int[0].insert(phat_int[0].begin(), n, temp_elem0);
+		phat_int[1].insert(phat_int[1].begin(), n, temp_elem1);
 
 		temp_elem0 = phat_int[0].back();
 		temp_elem1 = phat_int[1].back();
@@ -1309,8 +1313,9 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 		} else markers_low = markers_high;
 	}
 	//catch (CException* e)
-	catch (...)
+	catch (exception e)
 	{
+		fprintf(stderr, "Exception: %s", e.what());
 		return NULL;
 	}
 
@@ -1378,8 +1383,10 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 	// start + end crossing
 	findStartEndCrossing(point, marker1);
 	if (point[0].size() != point[1].size())
+	{
 		//throw new CException(wxT("local_maxima_detection: point sizes are different"), wxT("COneChannelDetect::localMaximaDetection"));
-		throw 0;
+		throw runtime_error("local_maxima_detection: point sizes are different");
+	}
 
 	marker1->assign(size, 0);
 
@@ -1488,8 +1495,10 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 	findStartEndCrossing(point, marker1);
 
 	if (point[0].size() != point[1].size())
+	{
 		//throw new CException(wxT("local_maxima_detection: point sizes are different 2"), wxT("COneChannelDetect::localMaximaDetection"));
-		throw 0;
+		throw runtime_error("local_maxima_detection: point sizes are different 2");
+	}
 
 	// local maxima with gradient in souroundings
 	for (i = 0; i < point[0].size(); i++)
