@@ -1,14 +1,11 @@
 #ifndef SPIKEDET_H
 #define SPIKEDET_H
 
-#include "openclcontext.h"
+#include "filterprocessor.h"
 
 #include <cstdio>
 #include <cmath>
 #include <vector>
-
-#include <CL/cl_gl.h>
-#include <clFFT.h>
 
 #define wxVector std::vector
 
@@ -18,9 +15,11 @@ template<class T>
 class SpikedetDataLoader
 {
 public:
-	void readSignal(T* data, int64_t firstSample, int64_t lastSample) = 0;
-	int64_t sampleCount() = 0;
-	int channelCount() = 0;
+	virtual ~SpikedetDataLoader()
+	{}
+	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) = 0;
+	virtual int64_t sampleCount() = 0;
+	virtual int channelCount() = 0;
 };
 
 typedef struct bandwidth
@@ -168,7 +167,7 @@ private:
 
 typedef struct detectorSettings {
 public:
-	int    m_band_low;                // (-fl)
+	/*int    m_band_low;                // (-fl)
 	int    m_band_high;               // (-fh)
 	double m_k1;               		  // (-k1)
 	double m_k2;               		  // (-k2)
@@ -179,9 +178,25 @@ public:
 	int    m_main_hum_freq;           // (-h)
 	double m_discharge_tol;           // (-dt)
 	double m_polyspike_union_time ;	  // (-pt)
-	int    m_decimation;
+	int    m_decimation;*/
+
+	int    m_band_low = 10;                // -fl
+	int    m_band_high = 60;               // -fh
+	double m_k1 = 3.65;                    // -k1
+	double m_k2 = -1000;                   // -k2
+	double m_k3 = 0;                       // -k3
+	int    m_winsize = 5;                  // -w
+	double m_noverlap = 4;                 // -n
+	int    m_buffering = 300;              // -buf
+	int    m_main_hum_freq = 50;           // -h
+	double m_discharge_tol = 0.005;        // -dt
+	double m_polyspike_union_time = 0.12;  // -pt
+	int    m_decimation = 200;             // -dec
 
 	/// A constructor
+	detectorSettings()
+	{}
+
 	detectorSettings(int band_low, int band_high, double k1, double k2, double k3, int winsize, double noverlap, int buffering, int main_hum_freq,
 	    double discharge_tol, double polyspike_union_time, int decimation)
 	    : m_band_low(band_low), m_band_high(band_high), m_k1(k1), m_k2(k2), m_k3(k3), m_winsize(winsize), m_noverlap(noverlap), m_buffering(buffering),
@@ -196,25 +211,15 @@ template<class T>
 class Spikedet
 {
 public:
-	Spikedet(int fs, DETECTOR_SETTINGS settings, OpenCLContext* context) : fs(fs), settings(settings), context(context)
-	{
-		/*if (settings.k2 < 0)
-			this->settings.k2 = settings.k1;
+	Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context);
 
-		if (settings.winsize < 0)
-			this->settings.winsize = 5*fs;
+	~Spikedet();
 
-		if (settings.noverlap < 0)
-			this->settings.noverlap = 4*fs;*/
-	}
-
-	~Spikedet()
-	{}
-
-	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput* out, CDischarges* discharges);
+	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges);
 
 private:
 	int fs;
+	int channelCount;
 	DETECTOR_SETTINGS settings;
 	OpenCLContext* context;
 	DETECTOR_SETTINGS* m_settings = &settings;
@@ -225,10 +230,15 @@ private:
 
 	void getIndexStartStop(wxVector<int>& indexStart, wxVector<int>& indexStop, const int& cntElemInCh, const double& T_seg, const int& fs, const int& winsize);
 
-	void spikeDetector(wxVector<SIGNALTYPE>& data, int countRecords, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
-	                   CDetectorOutput* out, CDischarges* discharges);
+	void spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
+	                   CDetectorOutput*& out, CDischarges*& discharges);
+
+	std::vector<T>* prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop);
+	FilterProcessor<T>* filterProcessor = nullptr;
+	int decimationF;
+	cl_command_queue queue;
+	cl_mem inBuffer, outBuffer;
+	std::vector<T> segmentBuffer, stepBuffer;
 };
-
-
 
 #endif // SPIKEDET_H

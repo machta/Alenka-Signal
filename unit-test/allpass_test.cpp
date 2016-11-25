@@ -22,16 +22,18 @@ void compareDouble(double a, double b)
 }
 
 template<class T>
-void test(function<void(FilterProcessor<T, false>*)> change, function<void(T, T)> compare)
+void test(function<void(FilterProcessor<T>*)> change, function<void(T, T)> compare)
 {
 	int n = 20;
 
 	OpenCLContext context(0, 0);
-	FilterProcessor<T, false> processor(n, 1, &context);
+	FilterProcessor<T> processor(n, 1, &context);
 
-	vector<T> signal;
+	change(&processor);
+
+	vector<T> signal(processor.discardSamples() - processor.delaySamples());
 	vector<T> output(n);
-	for (int i = 1; i <= n; i++)
+	for (int i = 1; i <= n - processor.discardSamples() + processor.delaySamples(); i++)
 		signal.push_back(i);
 
 	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, nullptr);
@@ -40,15 +42,14 @@ void test(function<void(FilterProcessor<T, false>*)> change, function<void(T, T)
 	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, n*sizeof(T), signal.data(), nullptr);
 	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, n*sizeof(T), nullptr, nullptr);
 
-	change(&processor);
-
 	processor.process(inBuffer, outBuffer, queue);
 
 	clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*sizeof(T), output.data(), 0, nullptr, nullptr);
 
-	int delay = processor.getDelay();
-	for (int i = 0; i < n - delay; i++)
-		compare(output[i + delay], signal[i]);
+	for (int i = 0; i < n - processor.discardSamples(); i++)
+		compare(output[i + processor.discardSamples()], signal[i + processor.discardSamples() - processor.delaySamples()]);
+
+	// TODO: release queue and buffers
 }
 
 } // namespace
@@ -67,24 +68,24 @@ void test(function<void(FilterProcessor<T, false>*)> change, function<void(T, T)
 
 TEST(allpass_test, sample_float)
 {
-	auto f = [] (FilterProcessor<float, false>* p) { p->changeSampleFilter(5, vector<float>{1, 1, 1}); };
+	auto f = [] (FilterProcessor<float>* p) { p->changeSampleFilter(5, vector<float>{1, 1, 1}); };
 	test<float>(f, &compareFloat);
 }
 
 TEST(allpass_test, coefficient_float)
 {
-	auto f = [] (FilterProcessor<float, false>* p) { p->changeFilter(vector<float>{0, 0, 1, 0, 0}); };
+	auto f = [] (FilterProcessor<float>* p) { p->changeFilter(vector<float>{0, 0, 1, 0, 0}); };
 	test<float>(f, &compareFloat);
 }
 
 TEST(allpass_test, sample_double)
 {
-	auto f = [] (FilterProcessor<double, false>* p) { p->changeSampleFilter(5, vector<double>{1, 1, 1}); };
+	auto f = [] (FilterProcessor<double>* p) { p->changeSampleFilter(5, vector<double>{1, 1, 1}); };
 	test<double>(f, &compareDouble);
 }
 
 TEST(allpass_test, coefficient_double)
 {
-	auto f = [] (FilterProcessor<double, false>* p) { p->changeFilter(vector<double>{0, 0, 1, 0, 0}); };
+	auto f = [] (FilterProcessor<double>* p) { p->changeFilter(vector<double>{0, 0, 1, 0, 0}); };
 	test<double>(f, &compareDouble);
 }

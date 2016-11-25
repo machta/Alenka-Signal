@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <vector>
+#include <cstdio>
 
 /**
  * @brief A class for computing FIR filter coefficients.
@@ -29,7 +30,7 @@ public:
 	 * will be returned.
 	 * @param Fs The sampling frequency.
 	 */
-	Filter(unsigned int M, double Fs) : M(M), Fs(Fs)
+	Filter(unsigned int M, double Fs, double notchWidth = 3) : M(M), Fs(Fs), notchWidth(notchWidth)
 	{}
 	~Filter()
 	{}
@@ -89,10 +90,11 @@ public:
 	{
 		notchF = value/Fs*2;
 	}
+	void printCoefficients(FILE* file, const std::vector<T>& coefficients);
 
 private:
 	unsigned int M;
-	double Fs, lowpassF, highpassF, notchF;
+	double Fs, lowpassF, highpassF, notchF, notchWidth;
 	bool notchOn = false, lowpassOn = false, highpassOn = false;
 
 	double hammingWindow(int n, int M)

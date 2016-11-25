@@ -106,6 +106,39 @@ public:
 	static void CCEC(cl_int val, std::string message, const char* file, int line);
 	static void CFCEC(clfftStatus val, std::string message, const char* file, int line);
 
+	/**
+	 * @brief Prints the content of the data array to a file in a human-readable format.
+	 *
+	 * Used for debugging purposes.
+	 */
+	static void printBuffer(FILE* file, float* data, int n);
+
+	/**
+	 * @brief Prints the content of the OpenCL buffer to a file in a human-readable format.
+	 *
+	 * Used for debugging purposes.
+	 */
+	static void printBuffer(FILE* file, cl_mem buffer, cl_command_queue queue);
+
+	/**
+	 * @brief Prints the content of the data array to a new file with filePath in a human-readable format.
+	 *
+	 * Used for debugging purposes.
+	 */
+	static void printBuffer(const std::string& filePath, float* data, int n);
+
+	/**
+	 * @brief Prints the content of the OpenCL buffer to a new file with filePath in a human-readable format.
+	 *
+	 * Used for debugging purposes.
+	 */
+	static void printBuffer(const std::string& filePath, cl_mem buffer, cl_command_queue queue);
+
+	static void printBufferDouble(FILE* file, double* data, int n);
+	static void printBufferDouble(FILE* file, cl_mem buffer, cl_command_queue queue);
+	static void printBufferDouble(const std::string& filePath, double* data, int n);
+	static void printBufferDouble(const std::string& filePath, cl_mem buffer, cl_command_queue queue);
+
 private:
 	cl_context context;
 	cl_platform_id platformId;

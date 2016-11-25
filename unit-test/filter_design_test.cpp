@@ -31,7 +31,7 @@ void test(function<void(T, T)> compare, T* answer)
 	int n = 20;
 
 	OpenCLContext context(0, 0);
-	FilterProcessor<T, true> processor(n, 1, &context);
+	FilterProcessor<T> processor(n, 1, &context);
 
 	vector<T> signal;
 	vector<T> output(n);

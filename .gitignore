@@ -34,3 +34,4 @@ build*
 unit-test/googletest
 clFFT
 alglib
+eigen

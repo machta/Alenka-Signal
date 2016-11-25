@@ -12,7 +12,7 @@
 /**
  * @brief This class handles filtering of data blocks.
  */
-template<class T, bool test>
+template<class T>
 class FilterProcessor
 {
 public:
@@ -26,25 +26,18 @@ public:
 		this->coefficients = coefficients;
 
 		coefficientsChanged = true;
-		samplesChanged = false;
 	}
-	void changeSampleFilter(int M, const std::vector<T>& samples)
-	{
-		assert((int)samples.size() == (M + 1)/2 && "Assure the right number of samples was provided.");
-
-		this->M = M;
-		this->samples = samples;
-
-		samplesChanged = true;
-		coefficientsChanged = false;
-	}
-	int getDelay() const
+	void changeSampleFilter(int M, const std::vector<T>& samples);
+	int delaySamples() const
 	{
 		return (M - 1)/2;
 	}
+	int discardSamples() const
+	{
+		return M - 1;
+	}
 	std::vector<T> getCoefficients() const
 	{
-		assert(test && "Calling this method when not in test mode doesn't make sense.");
 		return coefficients;
 	}
 
@@ -55,8 +48,6 @@ private:
 	int M;
 	bool coefficientsChanged = false;
 	std::vector<T> coefficients;
-	bool samplesChanged = false;
-	std::vector<T> samples;
 
 	cl_kernel filterKernel;
 	cl_kernel zeroKernel;

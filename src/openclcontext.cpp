@@ -393,3 +393,134 @@ void OpenCLContext::CFCEC(clfftStatus val, string message, const char* file, int
 
 	throw std::runtime_error(ss.str());
 }
+
+void OpenCLContext::printBuffer(FILE* file, float* data, int n)
+{
+#ifndef NDEBUG
+	for (int i = 0; i < n; ++i)
+	{
+		fprintf(file, "%f\n", data[i]);
+	}
+#else
+	(void)file;
+	(void)data;
+	(void)n;
+#endif
+}
+
+void OpenCLContext::printBuffer(FILE* file, cl_mem buffer, cl_command_queue queue)
+{
+#ifndef NDEBUG
+	cl_int err;
+
+	size_t size;
+	err = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
+
+	float* tmp = new float[size/sizeof(float)];
+
+	err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size, tmp, 0, nullptr, nullptr);
+	checkClErrorCode(err, "clEnqueueReadBuffer");
+
+	printBuffer(file, tmp, size/sizeof(float));
+
+	delete[] tmp;
+#else
+	(void)file;
+	(void)buffer;
+	(void)queue;
+#endif
+}
+
+void OpenCLContext::printBuffer(const string& filePath, float* data, int n)
+{
+#ifndef NDEBUG
+	FILE* file = fopen(filePath.c_str(), "w");
+	printBuffer(file, data, n);
+	fclose(file);
+#else
+	(void)filePath;
+	(void)data;
+	(void)n;
+#endif
+}
+
+void OpenCLContext::printBuffer(const string& filePath, cl_mem buffer, cl_command_queue queue)
+{
+#ifndef NDEBUG
+	FILE* file = fopen(filePath.c_str(), "w");
+	printBuffer(file, buffer, queue);
+	fclose(file);
+#else
+	(void)filePath;
+	(void)buffer;
+	(void)queue;
+#endif
+}
+
+
+
+
+void OpenCLContext::printBufferDouble(FILE* file, double* data, int n)
+{
+#ifndef NDEBUG
+	for (int i = 0; i < n; ++i)
+	{
+		fprintf(file, "%f\n", data[i]);
+	}
+#else
+	(void)file;
+	(void)data;
+	(void)n;
+#endif
+}
+
+void OpenCLContext::printBufferDouble(FILE* file, cl_mem buffer, cl_command_queue queue)
+{
+#ifndef NDEBUG
+	cl_int err;
+
+	size_t size;
+	err = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
+
+	double* tmp = new double[size/sizeof(double)];
+
+	err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size, tmp, 0, nullptr, nullptr);
+	checkClErrorCode(err, "clEnqueueReadBuffer");
+
+	printBufferDouble(file, tmp, size/sizeof(double));
+
+	delete[] tmp;
+#else
+	(void)file;
+	(void)buffer;
+	(void)queue;
+#endif
+}
+
+void OpenCLContext::printBufferDouble(const string& filePath, double* data, int n)
+{
+#ifndef NDEBUG
+	FILE* file = fopen(filePath.c_str(), "w");
+	printBufferDouble(file, data, n);
+	fclose(file);
+#else
+	(void)filePath;
+	(void)data;
+	(void)n;
+#endif
+}
+
+void OpenCLContext::printBufferDouble(const string& filePath, cl_mem buffer, cl_command_queue queue)
+{
+#ifndef NDEBUG
+	FILE* file = fopen(filePath.c_str(), "w");
+	printBufferDouble(file, buffer, queue);
+	fclose(file);
+#else
+	(void)filePath;
+	(void)buffer;
+	(void)queue;
+#endif
+}

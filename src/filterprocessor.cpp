@@ -1,5 +1,7 @@
 #include "filterprocessor.h"
 
+#include "fasttransforms.h"
+
 #include <cmath>
 #include <complex>
 #include <type_traits>
@@ -13,44 +15,10 @@ const char* kernels =
 #include "kernels.cl"
 ;
 
-void printBuffer(FILE* file, float* data, int n)
-{
-	return;
-	for (int i = 0; i < n; ++i)
-	{
-		fprintf(file, "%f\n", data[i]);
-	}
-}
-
-void printBuffer(const std::string& filePath, cl_mem buffer, cl_command_queue queue)
-{
-	return;
-#ifndef NDEBUG
-	FILE* file = fopen(filePath.c_str(), "w");
-
-	cl_int err;
-
-	size_t size;
-	err = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, nullptr);
-	checkClErrorCode(err, "clGetMemObjectInfo");
-
-	float* tmp = new float[size/sizeof(float)];
-
-	err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size, tmp, 0, nullptr, nullptr);
-	checkClErrorCode(err, "clEnqueueReadBuffer");
-
-	printBuffer(file, tmp, size/sizeof(float));
-
-	delete[] tmp;
-
-	fclose(file);
-#endif
-}
-
 } // namespace
 
-template<class T, bool test>
-FilterProcessor<T, test>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
+template<class T>
+FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
 	: blockLength(blockLength), blockChannels(channels)
 {
 	assert(blockLength%2 == 0);
@@ -80,7 +48,7 @@ FilterProcessor<T, test>::FilterProcessor(unsigned int blockLength, unsigned int
 #endif
 #endif
 
-	filterBuffer = clCreateBuffer(context->getCLContext(), test ? CL_MEM_READ_WRITE : flags, blockLength*sizeof(T), nullptr, &err);
+	filterBuffer = clCreateBuffer(context->getCLContext(), flags, blockLength*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
 	// Construct the fft plans.
@@ -120,8 +88,8 @@ FilterProcessor<T, test>::FilterProcessor(unsigned int blockLength, unsigned int
 	//clfftSetPlanDistance(ifftPlan, bufferDistance, bufferDistance/2);
 }
 
-template<class T, bool test>
-FilterProcessor<T, test>::~FilterProcessor()
+template<class T>
+FilterProcessor<T>::~FilterProcessor()
 {
 	cl_int err;
 	err = clReleaseKernel(filterKernel);
@@ -142,70 +110,18 @@ FilterProcessor<T, test>::~FilterProcessor()
 	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
 }
 
-template<class T, bool test>
-void FilterProcessor<T, test>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
+template<class T>
+void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
 {
 	cl_int err;
 	clfftStatus errFFT;
 
 	if (coefficientsChanged)
 	{
-		assert(samplesChanged == false);
-
-		err = clEnqueueWriteBuffer(queue, filterBuffer, CL_FALSE, 0, M*sizeof(T), coefficients.data(), 0, nullptr, nullptr);
+		err = clEnqueueWriteBuffer(queue, filterBuffer, CL_TRUE, 0, M*sizeof(T), coefficients.data(), 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueWriteBuffer()");
-	}
 
-	if (samplesChanged)
-	{
-		assert(coefficientsChanged == false);
-
-		int cM = 1 + M/2;
-		coefficients.insert(coefficients.begin(), 2*cM, 0);
-
-		for (unsigned int i = 0; i < /*cM*/samples.size(); ++i)
-		{
-			assert(i < /*(int)*/samples.size());
-
-			coefficients[2*i] = samples[i];
-		}
-
-		// Multiply Hr by exp(...) to make the frequency response H. (eq. 10.2.35)
-		for (int i = 0; i < cM; ++i)
-		{
-			complex<T> tmp(0, 1);
-			tmp *= -2*M_PI*i*(M - 1)/2/M;
-			tmp = exp(tmp);
-
-			complex<T> tmp2(coefficients[2*i], coefficients[2*i + 1]);
-			tmp *= tmp2;
-
-			coefficients[2*i] = tmp.real();
-			coefficients[2*i + 1] = tmp.imag();
-		}
-
-		size_t size = M;
-		clfftSetPlanLength(ifftPlan, CLFFT_1D, &size);
-		clfftSetPlanScale(ifftPlan, CLFFT_BACKWARD, 1./size);
-
-		err = clEnqueueWriteBuffer(queue, filterBuffer, CL_TRUE, 0, 2*cM*sizeof(T), coefficients.data(), 0, nullptr, nullptr);
-
-		// Compute the iFFT of H to make the FIR filter coefficients h. (eq. 10.2.33)
-		errFFT = clfftEnqueueTransform(ifftPlan, CLFFT_BACKWARD, 1, &queue, 0, nullptr, nullptr, &filterBuffer, nullptr, nullptr);
-		checkClfftErrorCode(errFFT, "clfftEnqueueTransform()");
-
-		if (test)
-		{
-			err = clEnqueueReadBuffer(queue, filterBuffer, CL_TRUE, 0, 2*cM*sizeof(T), coefficients.data(), 0, nullptr, nullptr);
-			checkClErrorCode(err, "clEnqueueReadBuffer()");
-		}
-	}
-
-	if (coefficientsChanged || samplesChanged)
-	{
-		coefficientsChanged = samplesChanged = false;
-
-		printBuffer("before_filterBuffer.txt", filterBuffer, queue);
+		//printBuffer("before_filterBuffer.txt", filterBuffer, queue);
 
 		// This section is disabled because of a bug in the implementation of clEnqueueFillBuffer().
 //#if CL_1_2
@@ -222,23 +138,23 @@ void FilterProcessor<T, test>::process(cl_mem inBuffer, cl_mem outBuffer, cl_com
 		checkClErrorCode(err, "clEnqueueNDRangeKernel()");
 //#endif
 
-		printBuffer("after_filterBuffer_zero.txt", filterBuffer, queue);
+		//printBuffer("after_filterBuffer_zero.txt", filterBuffer, queue);
 
 		errFFT = clfftEnqueueTransform(fftPlan, CLFFT_FORWARD, 1, &queue, 0, nullptr, nullptr, &filterBuffer, nullptr, nullptr);
 		checkClfftErrorCode(errFFT, "clfftEnqueueTransform");
 
-		printBuffer("after_filterBuffer.txt", filterBuffer, queue);
+		//printBuffer("after_filterBuffer.txt", filterBuffer, queue);
 	}
 
 	// TODO: apply a window function (on the device)
 
-	printBuffer("before_fft.txt", inBuffer, queue);
+	//printBuffer("before_fft.txt", inBuffer, queue);
 
 	// FFT.
 	errFFT = clfftEnqueueTransform(fftPlanBatch, CLFFT_FORWARD, 1, &queue, 0, nullptr, nullptr, &inBuffer, &outBuffer, nullptr);
 	checkClfftErrorCode(errFFT, "clfftEnqueueTransform");
 
-	printBuffer("after_fft.txt", outBuffer, queue);
+	//printBuffer("after_fft.txt", outBuffer, queue);
 
 	// Multiply.
 	err = clSetKernelArg(filterKernel, 0, sizeof(cl_mem), &outBuffer);
@@ -252,16 +168,69 @@ void FilterProcessor<T, test>::process(cl_mem inBuffer, cl_mem outBuffer, cl_com
 	err = clEnqueueNDRangeKernel(queue, filterKernel, 2, nullptr, globalWorkSize, nullptr, 0, nullptr, nullptr);
 	checkClErrorCode(err, "clEnqueueNDRangeKernel()");
 
-	printBuffer("after_multiply.txt", outBuffer, queue);
+	//printBuffer("after_multiply.txt", outBuffer, queue);
 
 	// IFFT.
 	errFFT = clfftEnqueueTransform(ifftPlanBatch, CLFFT_BACKWARD, 1, &queue, 0, nullptr, nullptr, &outBuffer, nullptr, nullptr);
 	checkClfftErrorCode(errFFT, "clfftEnqueueTransform");
 
-	printBuffer("after_ifft.txt", outBuffer, queue);
+	//printBuffer("after_ifft.txt", outBuffer, queue);
 }
 
-template class FilterProcessor<float, false>;
-template class FilterProcessor<float, true>;
-template class FilterProcessor<double, false>;
-template class FilterProcessor<double, true>;
+template<class T>
+void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples)
+{
+	assert((int)samples.size() == (M + 1)/2 && "Assure the right number of samples was provided.");
+
+	this->M = M;
+	//this->samples = samples;
+
+	int cM = 1 + M/2;
+
+	alglib::complex_1d_array inArray;
+	inArray.setlength(cM);
+	inArray[cM - 1].x = 0;
+	inArray[cM - 1].y = 0;
+
+	for (unsigned int i = 0; i < /*cM*/samples.size(); ++i)
+	{
+		assert(i < /*(int)*/samples.size());
+
+		inArray[i].x = samples[i];
+		inArray[i].y = 0;
+	}
+
+	// Multiply Hr by exp(...) to make the frequency response H. (eq. 10.2.35)
+	for (int i = 0; i < cM; ++i)
+	{
+		/*complex<T> tmp(0, 1);
+		tmp *= -2*M_PI*i*(M - 1)/2/M;
+		tmp = exp(tmp);
+
+		complex<T> tmp2(coefficients[2*i], coefficients[2*i + 1]);
+		tmp *= tmp2;
+
+		coefficients[2*i] = tmp.real();
+		coefficients[2*i + 1] = tmp.imag();*/
+
+		complex<double> tmp(0, 1);
+		tmp *= -2*M_PI*i*(M - 1)/2/M;
+		tmp = exp(tmp);
+
+		inArray[i] *= alglib::complex(tmp.real(), tmp.imag());
+	}
+
+	// iFFT
+	alglib::real_1d_array outArray;
+	outArray.setlength(M);
+	alglib::fftr1dinv(inArray, M, outArray);
+
+	coefficients.resize(M);
+	for (int i = 0; i < M; i++)
+		coefficients[i] = outArray[i];
+
+	coefficientsChanged = true;
+}
+
+template class FilterProcessor<float>;
+template class FilterProcessor<double>;

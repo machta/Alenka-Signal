@@ -4,10 +4,17 @@ set(BUILD_GTEST ON)
 add_subdirectory(googletest)
 include_directories(../include googletest/googletest/include)
 
+# alenka-file
+set(ALENKA_FILE_DIR ../../Alenka-File CACHE PATH "Path to Alenka-File source.")
+add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
+include_directories(${ALENKA_FILE_DIR}/include)
+
 # The tests.
-file(GLOB SRC *)
-add_executable (unit-test ${SRC})
-target_link_libraries (unit-test ${LIBS_TO_LINK_ALENKA_SIGNAL} gtest gtest_main)
+file(GLOB SRC *.cpp)
+add_executable(unit-test ${SRC})
+target_link_libraries(unit-test ${LIBS_TO_LINK_ALENKA_SIGNAL} ${LIBS_TO_LINK_ALENKA_FILE} gtest gtest_main)
+
+message("link: ${LIBS_TO_LINK_ALENKA_FILE}")
 
 if(MSVC)
 	find_file(CLFFT_DLL clFFT.dll PATHS ${CLFFT_DIR} PATH_SUFFIXES bin)

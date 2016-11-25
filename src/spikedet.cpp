@@ -1,10 +1,17 @@
 #include "spikedet.h"
 
+#include "filter.h"
+
 #include "interpolation.h"
 #include "fasttransforms.h"
 
 #include <climits>
 #include <algorithm>
+#include <complex>
+
+#include <Eigen/Dense>
+typedef std::vector<int> vectori;
+typedef std::vector<double> vectord;
 
 using namespace std;
 
@@ -131,17 +138,426 @@ private:
 	const int 					m_channel;
 };
 
+// Hilbert transform ----------------------------------------------------------------------------------
+
+/// Calculation of the absolute values of the Hilbert transform
+namespace CDSP
+{
+
+void AbsHilbert(wxVector<SIGNALTYPE>& data)
+{
+	int i, sizeInput;
+	alglib::complex_1d_array in;
+
+	// create complex array
+	sizeInput = data.size();
+	in.setlength(sizeInput);
+
+	for (i = 0; i < sizeInput; i++)
+	{
+		in[i].x = data.at(i);
+		in[i].y = 0;
+	}
+
+	// FFT
+	alglib::fftc1d(in);
+
+	// H
+	wxVector<int> h(data.size(), 0);
+	if (2*floor(sizeInput/2) == sizeInput)
+	{
+		// even
+		h.at(0) = 1;
+		h.at(sizeInput/2) = 1;
+		for (i = 1; i < sizeInput/2; i++)
+			h.at(i) = 2;
+	}
+	else
+	{
+		// odd
+		h.at(0) = 1;
+		for (i = 1; i < (sizeInput+1)/2; i++)
+			h.at(i) = 2;
+	}
+
+	// IFFT
+	for (i = 0; i < sizeInput; i++)
+	{
+		in[i].x *= h[i];
+		in[i].y *= h[i];
+	}
+
+	// IFFT
+	alglib::fftc1dinv(in);
+
+	// Absolute value
+	for (i = 0; i < sizeInput; i++)
+	{
+		complex<SIGNALTYPE> tmp(in[i].x, in[i].y);
+		data.at(i) = abs(tmp);
+	}
+}
+
+// From here up to filtfilt taken from here:
+void add_index_range(vectori &indices, int beg, int end, int inc = 1)
+{
+	for (int i = beg; i <= end; i += inc)
+	{
+	   indices.push_back(i);
+	}
+}
+
+void add_index_const(vectori &indices, int value, size_t numel)
+{
+	while (numel--)
+	{
+		indices.push_back(value);
+	}
+}
+
+void append_vector(vectord &vec, const vectord &tail)
+{
+	vec.insert(vec.end(), tail.begin(), tail.end());
+}
+
+vectord subvector_reverse(const vectord &vec, int idx_end, int idx_start)
+{
+	vectord result(&vec[idx_start], &vec[idx_end+1]);
+	std::reverse(result.begin(), result.end());
+	return result;
+}
+
+inline int max_val(const vectori& vec)
+{
+	return std::max_element(vec.begin(), vec.end())[0];
+}
+
+void filter(vectord B, vectord A, const vectord &X, vectord &Y, vectord &Zi)
+{
+	if (A.empty())
+	{
+		throw std::domain_error("The feedback filter coefficients are empty.");
+	}
+	if (std::all_of(A.begin(), A.end(), [](double coef){ return coef == 0; }))
+	{
+		throw std::domain_error("At least one of the feedback filter coefficients has to be non-zero.");
+	}
+	if (A[0] == 0)
+	{
+		throw std::domain_error("First feedback coefficient has to be non-zero.");
+	}
+
+	// Normalize feedback coefficients if a[0] != 1;
+	auto a0 = A[0];
+	if (a0 != 1.0)
+	{
+		std::transform(A.begin(), A.end(), A.begin(), [a0](double v) { return v / a0; });
+		std::transform(B.begin(), B.end(), B.begin(), [a0](double v) { return v / a0; });
+	}
+
+	size_t input_size = X.size();
+	size_t filter_order = std::max(A.size(), B.size());
+	B.resize(filter_order, 0);
+	A.resize(filter_order, 0);
+	Zi.resize(filter_order, 0);
+	Y.resize(input_size);
+
+	const double *x = &X[0];
+	const double *b = &B[0];
+	const double *a = &A[0];
+	double *z = &Zi[0];
+	double *y = &Y[0];
+
+	for (size_t i = 0; i < input_size; ++i)
+	{
+		size_t order = filter_order - 1;
+		while (order)
+		{
+			if (i >= order)
+			{
+				z[order - 1] = b[order] * x[i - order] - a[order] * y[i - order] + z[order];
+			}
+			--order;
+		}
+		y[i] = b[0] * x[i] + z[0];
+	}
+	Zi.resize(filter_order - 1);
+}
+
+void filtfilt(vectord B, vectord A, const vectord &X, vectord &Y)
+{
+	using namespace Eigen;
+
+	int len = X.size();     // length of input
+	int na = A.size();
+	int nb = B.size();
+	int nfilt = (nb > na) ? nb : na;
+	int nfact = 3 * (nfilt - 1); // length of edge transients
+
+	if (len <= nfact)
+	{
+		throw std::domain_error("Input data too short! Data must have length more than 3 times filter order.");
+	}
+
+	// set up filter's initial conditions to remove DC offset problems at the
+	// beginning and end of the sequence
+	B.resize(nfilt, 0);
+	A.resize(nfilt, 0);
+
+	vectori rows, cols;
+	//rows = [1:nfilt-1           2:nfilt-1             1:nfilt-2];
+	add_index_range(rows, 0, nfilt - 2);
+	if (nfilt > 2)
+	{
+		add_index_range(rows, 1, nfilt - 2);
+		add_index_range(rows, 0, nfilt - 3);
+	}
+	//cols = [ones(1,nfilt-1)         2:nfilt-1          2:nfilt-1];
+	add_index_const(cols, 0, nfilt - 1);
+	if (nfilt > 2)
+	{
+		add_index_range(cols, 1, nfilt - 2);
+		add_index_range(cols, 1, nfilt - 2);
+	}
+	// data = [1+a(2)         a(3:nfilt)        ones(1,nfilt-2)    -ones(1,nfilt-2)];
+
+	auto klen = rows.size();
+	vectord data;
+	data.resize(klen);
+	data[0] = 1 + A[1];  int j = 1;
+	if (nfilt > 2)
+	{
+		for (int i = 2; i < nfilt; i++)
+			data[j++] = A[i];
+		for (int i = 0; i < nfilt - 2; i++)
+			data[j++] = 1.0;
+		for (int i = 0; i < nfilt - 2; i++)
+			data[j++] = -1.0;
+	}
+
+	vectord leftpad = subvector_reverse(X, nfact, 1);
+	double _2x0 = 2 * X[0];
+	std::transform(leftpad.begin(), leftpad.end(), leftpad.begin(), [_2x0](double val) {return _2x0 - val; });
+
+	vectord rightpad = subvector_reverse(X, len - 2, len - nfact - 1);
+	double _2xl = 2 * X[len-1];
+	std::transform(rightpad.begin(), rightpad.end(), rightpad.begin(), [_2xl](double val) {return _2xl - val; });
+
+	double y0;
+	vectord signal1, signal2, zi;
+
+	signal1.reserve(leftpad.size() + X.size() + rightpad.size());
+	append_vector(signal1, leftpad);
+	append_vector(signal1, X);
+	append_vector(signal1, rightpad);
+
+	// Calculate initial conditions
+	MatrixXd sp = MatrixXd::Zero(max_val(rows) + 1, max_val(cols) + 1);
+	for (size_t k = 0; k < klen; ++k)
+	{
+		sp(rows[k], cols[k]) = data[k];
+	}
+	auto bb = VectorXd::Map(B.data(), B.size());
+	auto aa = VectorXd::Map(A.data(), A.size());
+	MatrixXd zzi = (sp.inverse() * (bb.segment(1, nfilt - 1) - (bb(0) * aa.segment(1, nfilt - 1))));
+	zi.resize(zzi.size());
+
+	// Do the forward and backward filtering
+	y0 = signal1[0];
+	std::transform(zzi.data(), zzi.data() + zzi.size(), zi.begin(), [y0](double val){ return val*y0; });
+	filter(B, A, signal1, signal2, zi);
+	std::reverse(signal2.begin(), signal2.end());
+	y0 = signal2[0];
+	std::transform(zzi.data(), zzi.data() + zzi.size(), zi.begin(), [y0](double val){ return val*y0; });
+	filter(B, A, signal2, signal1, zi);
+	Y = subvector_reverse(signal1, signal1.size() - nfact - 1, nfact);
+}
+
+} // namespace CDSP
+
+const int BLOCK_SIZE = 1024*2/*512*/;
+
+int nearestGreaterDivisor(int a, int b)
+{
+	for (int i = a; a < b; i++)
+	{
+		if (b%i == 0)
+			return i;
+	}
+	return b;
+}
+
 } // namespace
 
+// ------------------------------------------------------------------------------------------------
+// CDetectorOutput
+// ------------------------------------------------------------------------------------------------
+
+/// A constructor.
+CDetectorOutput::CDetectorOutput()
+{
+	/* empty */
+}
+
+/// A virtual destructor.
+CDetectorOutput::~CDetectorOutput()
+{
+	/* empty */
+}
+
+
+/// Add data to the vectors.
+void CDetectorOutput::Add(const double& pos, const double& dur, const int& chan, const double& con, const double& weight, const double& pdf)
+{
+	m_pos.push_back(pos);
+	m_dur.push_back(dur);
+	m_chan.push_back(chan);
+	m_con.push_back(con);
+	m_weight.push_back(weight);
+	m_pdf.push_back(pdf);
+}
+
+///Erase records at positions.
+void CDetectorOutput::Remove(const wxVector<int>& pos)
+{
+	unsigned i, counter = 0;
+
+	for (i = 0; i < pos.size(); i++)
+	{
+		if (m_pos.size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+			continue;
+
+		m_pos.erase(m_pos.begin()+pos.at(i)-counter);
+		m_dur.erase(m_dur.begin()+pos.at(i)-counter);
+		m_chan.erase(m_chan.begin()+pos.at(i)-counter);
+		m_con.erase(m_con.begin()+pos.at(i)-counter);
+		m_weight.erase(m_weight.begin()+pos.at(i)-counter);
+		m_pdf.erase(m_pdf.begin()+pos.at(i)-counter);
+
+		counter++;
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+// CDischarges
+// ------------------------------------------------------------------------------------------------
+
+/// A constructor.
+CDischarges::CDischarges(const int& countChannels)
+{
+	m_countChannels = countChannels;
+
+	m_MV   = new std::vector<double>[countChannels];
+	m_MA   = new std::vector<double>[countChannels];
+	m_MP   = new std::vector<double>[countChannels];
+	m_MD   = new std::vector<double>[countChannels];
+	m_MW   = new std::vector<double>[countChannels];
+	m_MPDF = new std::vector<double>[countChannels];
+}
+
+/// A virual destructor.
+CDischarges::~CDischarges()
+{
+	delete [] m_MV;
+	delete [] m_MA;
+	delete [] m_MP;
+	delete [] m_MD;
+	delete [] m_MW;
+	delete [] m_MPDF;
+}
+
+/**
+ * Erase records.
+ * @param pos positions of records.
+ */
+void CDischarges::Remove(const wxVector<int>& pos)
+{
+	unsigned i, channel, counter = 0;
+
+	for (i = 0; i < pos.size(); i++)
+	{
+
+		for (channel = 0; channel < m_countChannels; channel++)
+		{
+			if (m_MV[channel].size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+				continue;
+
+			m_MV[channel].erase(m_MV[channel].begin()+pos.at(i)-counter);
+			m_MA[channel].erase(m_MA[channel].begin()+pos.at(i)-counter);
+			m_MP[channel].erase(m_MP[channel].begin()+pos.at(i)-counter);
+			m_MW[channel].erase(m_MW[channel].begin()+pos.at(i)-counter);
+			m_MPDF[channel].erase(m_MPDF[channel].begin()+pos.at(i)-counter);
+			m_MD[channel].erase(m_MD[channel].begin()+pos.at(i)-counter);
+		}
+		counter++;
+	}
+
+}
+
 template<class T>
-void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput* out, CDischarges* discharges)
+Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
+	fs(fs), channelCount(channelCount), settings(settings), context(context)
+{
+	if (settings.m_k2 < 0)
+		this->settings.m_k2 = settings.m_k1;
+
+	int M = fs + 1;
+	Filter<T> filter(M, fs, 1);
+	filter.notch(true);
+	filter.highpass(true);
+	filter.lowpass(true);
+
+	filter.setNotch(settings.m_main_hum_freq);
+	filter.setHighpass(settings.m_band_low);
+
+	decimationF = settings.m_decimation;
+	decimationF = nearestGreaterDivisor(min(fs, decimationF), fs);
+	filter.setLowpass(min(decimationF, settings.m_band_high));
+
+	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context);
+	filterProcessor->changeSampleFilter(M, filter.computeSamples());
+
+	//FILE* file = fopen("filter_coefficients.txt", "w");
+	//filter.printCoefficients(file, filterProcessor->getCoefficients());
+	//fclose(file);
+
+	cl_int err;
+	cl_mem_flags flags = CL_MEM_READ_WRITE;
+
+	queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
+	checkClErrorCode(err, "clCreateCommandQueue");
+
+	inBuffer = clCreateBuffer(context->getCLContext(), flags, BLOCK_SIZE*channelCount*sizeof(T), nullptr, &err);
+	checkClErrorCode(err, "clCreateBuffer");
+
+	outBuffer = clCreateBuffer(context->getCLContext(), flags, BLOCK_SIZE*channelCount*sizeof(T), nullptr, &err);
+	checkClErrorCode(err, "clCreateBuffer");
+}
+
+template<class T>
+Spikedet<T>::~Spikedet()
+{
+	delete filterProcessor;
+
+	cl_int err;
+
+	err = clReleaseCommandQueue(queue);
+	checkClErrorCode(err, "clReleaseCommandQueue()");
+
+	err = clReleaseMemObject(inBuffer);
+	checkClErrorCode(err, "clReleaseMemObject()");
+	err = clReleaseMemObject(outBuffer);
+	checkClErrorCode(err, "clReleaseMemObject()");
+}
+
+template<class T>
+void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges)
 {
 	m_out = out;
 	m_discharges = discharges;
 	int 				  i, j, k, indexSize;
 	int 				  start, stop, tmp;
 	//wxVector<SIGNALTYPE>* segments = NULL;
-	vector<T> segment;
 	wxVector<int>         indexStart, indexStop;
 
 	BANDWIDTH 			  bandwidth(m_settings->m_band_low, m_settings->m_band_high);
@@ -199,12 +615,8 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput* ou
 //			// error - end of file?
 //			break;
 //		}
-		int len = stop - start + 1;
-		segment.resize(len);
-		loader->readSignal(segment.data(), start, stop);
-
-		spikeDetector(segment, len, countChannels, fs, bandwidth, subOut, subDischarges);
-
+		spikeDetector(loader, start, stop, countChannels, fs, bandwidth, subOut, subDischarges);
+		//continue;
 		//delete [] segments;
 		//segments = NULL;
 
@@ -343,16 +755,16 @@ void Spikedet<T>::getIndexStartStop(wxVector<int>& indexStart, wxVector<int>& in
 
 /// Spike detector
 template<class T>
-void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
-									CDetectorOutput* out, CDischarges* discharges)
+void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
+									CDetectorOutput*& out, CDischarges*& discharges)
 {
 	double 				  k1 = m_settings->m_k1;
 	double 				  k2 = m_settings->m_k2;
 	double 				  discharge_tol = m_settings->m_discharge_tol;
-	int 				  decimation = m_settings->m_decimation;
+	int 				  decimation = /*m_settings->m_decimation*/decimationF;
 	int                   fs = inputFS;
 
-	//int    		  		  countRecords = data[0].size();
+	int    		  		  countRecords = stopSample - startSample;
 	wxVector<int> 		  index;
 	int 		  		  stop, step;
 	int	  	        	  i, j;
@@ -390,6 +802,8 @@ void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords,
 	double 				  tmp_mp;
 	int    				  tmp_row;
 
+	wxVector<T>* data = prepareSegment(loader, startSample, stopSample);
+
 	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
 	if (fs > decimation)
 	{
@@ -398,7 +812,7 @@ void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords,
 		fs = decimation;
 		winsize  = m_settings->m_winsize * fs;
 		noverlap = m_settings->m_noverlap * fs;
-		//countRecords = data[0].size();
+		countRecords = data[0].size();
 	}
 
 	// Segmentation index
@@ -420,14 +834,13 @@ void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords,
 	//CDSP::Filtering(data, countChannels, fs, bandwidth);
 
 	// local maxima detection
-	wxVector<SIGNALTYPE>* data;
-
 	ret = new ONECHANNELDETECTRET*[countChannels];
 	threads = new COneChannelDetect*[countChannels];
 	for (i = 0; i < countChannels; i++)
 	{
 		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
 		//threads[i]->Run();
+		ret[i] = threads[i]->Entry();
 	}
 
 	for (i = 0; i < countChannels; i++)
@@ -435,6 +848,9 @@ void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords,
 		//ret[i] = (ONECHANNELDETECTRET*)threads[i]->Wait();
 		delete threads[i];
 	}
+
+	delete[] data;
+	//return;
 
 	delete [] threads;
 	// processing detection results
@@ -612,6 +1028,71 @@ void Spikedet<T>::spikeDetector(wxVector<SIGNALTYPE>& rawData, int countRecords,
 	delete [] ret;
 }
 
+template<class T>
+vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop)
+{
+	cl_int err;
+
+	int discard = filterProcessor->discardSamples();
+	int delay = filterProcessor->delaySamples();
+	int step = BLOCK_SIZE - discard;
+	int len = stop - start;
+	len = (len + step - 1)/step*step;
+
+	segmentBuffer.resize(len*channelCount);
+	stepBuffer.resize(BLOCK_SIZE*channelCount);
+
+	vector<T*> channelPointers(channelCount);
+	for (int i = 0; i < channelCount; i++)
+		channelPointers[i] = segmentBuffer.data() + i*len;
+
+	for (int i = 0; i < len; i += step)
+	{
+		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1);
+
+		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, BLOCK_SIZE*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
+		checkClErrorCode(err, "clEnqueueWriteBuffer()");
+
+		filterProcessor->process(inBuffer, outBuffer, queue);
+
+		//OpenCLContext::printBuffer("spikedet_after_filter.txt", outBuffer, queue);
+
+		for (int j = 0; j < channelCount; j++)
+		{
+			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*BLOCK_SIZE + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
+			checkClErrorCode(err, "clEnqueueReadBuffer()");
+
+			channelPointers[j] += step;
+		}
+	}
+
+	//OpenCLContext::printBuffer("spikedet_segment.txt", segmentBuffer.data(), (stop - start)*channelCount);
+
+	err = clFinish(queue);
+	checkClErrorCode(err, "clFinish()");
+
+	// Create the output segment;
+	int D = fs/decimationF;
+	assert(D >= 1);
+	assert(D*decimationF == fs);
+
+	vector<T>* output = new vector<T>[channelCount];
+	for (int i = 0; i < channelCount; i++)
+	{
+		int size = (stop - start)/D;
+		output[i].resize(size);
+		T* channelPointer = segmentBuffer.data() + i*len;
+
+		for (int j = 0; j < size; j++)
+		{
+			output[i][j] = *channelPointer;
+			channelPointer += D;
+		}
+	}
+
+	return output;
+}
+
 // ------------------------------------------------------------------------------------------------
 // COneChannelDetect
 // ------------------------------------------------------------------------------------------------
@@ -643,12 +1124,14 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 	wxVector<double>      logs;
 	alglib::real_1d_array r1a_logs;
 
-	wxVector<SIGNALTYPE>  phatMedian, phatStd;
+	//wxVector<SIGNALTYPE>  phatMedian, phatStd;
+	vector<double>  phatMedian, phatStd;
 
 	ONECHANNELDETECTRET*  ret = NULL;
 
 	// Hilbert's envelope (intense envelope)
-	//CDSP::AbsHilbert(envelope);
+	CDSP::AbsHilbert(envelope);
+	//OpenCLContext::printBuffer("envelope.txt", envelope.data(), envelope.size());
 
 	for (i = 0; i < indexSize; i++)
 	{
@@ -687,8 +1170,16 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 			b.push_back(l);
 		}
 
-		//CDSP::FiltFilt(b, a, &phatMedian); // I don't know why this is here, so better keep these two filters.
-		//CDSP::FiltFilt(b, a, &phatStd);
+		// I don't know why this is here, so better keep these two filters.
+		vector<double> out;
+		CDSP::filtfilt(b, a, phatMedian, out);
+		//OpenCLContext::printBufferDouble("phat.txt", out.data(), out.size());
+		//OpenCLContext::printBufferDouble("old_phat.txt", phatMedian.data(), phatMedian.size());
+		phatMedian = out;
+
+		out.clear();
+		CDSP::filtfilt(b, a, phatStd, out);
+		phatStd = out;
 	}
 
 	// interpolation of thresholds value to threshold curve (like backround)
@@ -1148,5 +1639,5 @@ void COneChannelDetect::findStartEndCrossing(wxVector<int> point[2], const wxVec
 	}
 }
 
-class template Spikedet<float>;
-class template Spikedet<double>;
+template class Spikedet<float>;
+//template class Spikedet<double>;
