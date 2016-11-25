@@ -8,6 +8,7 @@
 #include <climits>
 #include <algorithm>
 #include <complex>
+#include <numeric>
 
 #include <Eigen/Dense>
 typedef std::vector<int> vectori;
