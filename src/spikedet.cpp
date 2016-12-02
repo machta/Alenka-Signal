@@ -199,7 +199,7 @@ void AbsHilbert(wxVector<SIGNALTYPE>& data)
 	}
 }
 
-// From here up to filtfilt taken from here:
+// From here up to filtfilt taken from here: http://stackoverflow.com/a/27270420/287933
 void add_index_range(vectori &indices, int beg, int end, int inc = 1)
 {
 	for (int i = beg; i <= end; i += inc)
@@ -1234,7 +1234,7 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 //			phat_int[0].insert(phat_int[0].begin(), temp_elem0);
 //			phat_int[1].insert(phat_int[1].begin(), temp_elem1);
 //		}
-		// My optimization: insert constants at one to prevent repeated copying in the vector. Makes is about 2.5x faster.
+		// My optimization: Insert all elements at once to prevent repeated copying in the vector. Makes is about 2.5x faster for an 1 kHz sample with no decimation.
 		int n = floor(m_settings->m_winsize * m_fs / 2);
 		phat_int[0].insert(phat_int[0].begin(), n, temp_elem0);
 		phat_int[1].insert(phat_int[1].begin(), n, temp_elem1);

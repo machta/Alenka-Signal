@@ -46,3 +46,9 @@ endif()
 
 file(GLOB SRC src/* alglib/src/*.cpp)
 add_library(alenka-signal ${SRC})
+
+# Install rule.
+add_custom_target(install-alenka-signal
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:alenka-signal> $<TARGET_FILE:clFFT> ${CMAKE_INSTALL_PREFIX}/lib
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
