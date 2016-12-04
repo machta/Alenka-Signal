@@ -52,7 +52,7 @@ void test(const string& file, DETECTOR_SETTINGS settings)
 	checkClfftErrorCode(errFFT, "clfftSetup()");
 
 	{
-		OpenCLContext context(0, 0);
+		OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 
 		Loader<T> loader(file);
 

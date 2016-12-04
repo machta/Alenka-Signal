@@ -30,7 +30,7 @@ void test(function<void(T, T)> compare, T* answer)
 {
 	int n = 20;
 
-	OpenCLContext context(0, 0);
+	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 	FilterProcessor<T> processor(n, 1, &context);
 
 	vector<T> signal;

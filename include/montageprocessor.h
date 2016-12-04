@@ -30,7 +30,7 @@ public:
 	/**
 	 * @brief Returns the number of tracks of the montage. 
 	 */
-	unsigned int getNumberOfRows() const
+	unsigned int getNumberOfRows() const // TODO: remove if not used
 	{
 		return numberOfRows;
 	}

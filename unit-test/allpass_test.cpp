@@ -37,7 +37,7 @@ void test(function<void(FilterProcessor<T>*)> change, function<void(T, T)> compa
 		cl_int err;
 		int n = 20;
 
-		OpenCLContext context(0, 0);
+		OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 		FilterProcessor<T> processor(n, 1, &context);
 
 		change(&processor);

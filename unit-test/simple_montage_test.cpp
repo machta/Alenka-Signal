@@ -26,7 +26,7 @@ void test(function<void(T, T)> compare)
 	int inChannels = 3;
 	int offset = 5;
 
-	OpenCLContext context(0, 0);
+	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, nullptr);
 	MontageProcessor<T> processor(offset, n - offset, inChannels);
 
