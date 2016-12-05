@@ -183,7 +183,7 @@ public:
 	int    m_band_low = 10;                // -fl
 	int    m_band_high = 60;               // -fh
 	double m_k1 = 3.65;                    // -k1
-	double m_k2 = -1000;                   // -k2
+	double m_k2 = 3.65;                    // -k2
 	double m_k3 = 0;                       // -k3
 	int    m_winsize = 5;                  // -w
 	double m_noverlap = 4;                 // -n

@@ -376,7 +376,7 @@ void filtfilt(vectord B, vectord A, const vectord &X, vectord &Y)
 
 } // namespace CDSP
 
-const int BLOCK_SIZE = 1024*2/*512*/;
+const int BLOCK_SIZE = 1024*16/*512*/;
 
 int nearestGreaterDivisor(int a, int b)
 {
@@ -499,9 +499,6 @@ template<class T>
 Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
 	fs(fs), channelCount(channelCount), settings(settings), context(context)
 {
-	if (settings.m_k2 < 0)
-		this->settings.m_k2 = settings.m_k1;
-
 	int M = fs + 1;
 	Filter<T> filter(M, fs, 1);
 	filter.notch(true);
