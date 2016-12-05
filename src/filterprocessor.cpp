@@ -48,44 +48,50 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 #endif
 #endif
 
-	filterBuffer = clCreateBuffer(context->getCLContext(), flags, blockLength*sizeof(T), nullptr, &err);
+	filterBuffer = clCreateBuffer(context->getCLContext(), flags, (blockLength + 4)*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
 	// Construct the fft plans.
 	size_t size = blockLength;
-	size_t bufferDistance = size;
+	size_t bufferDistance = size + 4;
 
 	errFFT = clfftCreateDefaultPlan(&fftPlan, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	clfftSetPlanPrecision(fftPlan, precision);
-	clfftSetLayout(fftPlan, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
-	clfftSetResultLocation(fftPlan, CLFFT_INPLACE);
-	clfftSetPlanBatchSize(fftPlan, 1);
+	errFFT = clfftSetPlanPrecision(fftPlan, precision);
+	checkClfftErrorCode(errFFT, "clfftSetPlanPrecision()");
+	errFFT = clfftSetLayout(fftPlan, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
+	checkClfftErrorCode(errFFT, "clfftSetLayout()");
+	errFFT = clfftSetResultLocation(fftPlan, CLFFT_INPLACE);
+	checkClfftErrorCode(errFFT, "clfftSetResultLocation()");
+	errFFT = clfftSetPlanBatchSize(fftPlan, 1);
+	checkClfftErrorCode(errFFT, "clfftSetPlanBatchSize()");
 	//clfftSetPlanDistance(fftPlan, bufferDistance, bufferDistance/2);
 
 	errFFT = clfftCreateDefaultPlan(&fftPlanBatch, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	clfftSetPlanPrecision(fftPlanBatch, precision);
-	clfftSetLayout(fftPlanBatch, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
-	clfftSetResultLocation(fftPlanBatch, CLFFT_OUTOFPLACE);
-	clfftSetPlanBatchSize(fftPlanBatch, blockChannels);
-	clfftSetPlanDistance(fftPlanBatch, bufferDistance, bufferDistance/2);
+	errFFT = clfftSetPlanPrecision(fftPlanBatch, precision);
+	checkClfftErrorCode(errFFT, "clfftSetPlanPrecision()");
+	errFFT = clfftSetLayout(fftPlanBatch, CLFFT_REAL, CLFFT_HERMITIAN_INTERLEAVED);
+	checkClfftErrorCode(errFFT, "clfftSetLayout()");
+	errFFT = clfftSetResultLocation(fftPlanBatch, CLFFT_OUTOFPLACE);
+	checkClfftErrorCode(errFFT, "clfftSetResultLocation()");
+	errFFT = clfftSetPlanBatchSize(fftPlanBatch, blockChannels);
+	checkClfftErrorCode(errFFT, "clfftSetPlanBatchSize()");
+	errFFT = clfftSetPlanDistance(fftPlanBatch, bufferDistance, bufferDistance/2);
+	checkClfftErrorCode(errFFT, "clfftSetPlanDistance()");
 
 	errFFT = clfftCreateDefaultPlan(&ifftPlanBatch, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	clfftSetPlanPrecision(ifftPlanBatch, precision);
-	clfftSetLayout(ifftPlanBatch, CLFFT_HERMITIAN_INTERLEAVED, CLFFT_REAL);
-	clfftSetResultLocation(ifftPlanBatch, CLFFT_INPLACE);
-	clfftSetPlanBatchSize(ifftPlanBatch, blockChannels);
-	clfftSetPlanDistance(ifftPlanBatch, bufferDistance/2, bufferDistance);
-
-	errFFT = clfftCreateDefaultPlan(&ifftPlan, context->getCLContext(), CLFFT_1D, &size);
-	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
-	clfftSetPlanPrecision(ifftPlan, precision);
-	clfftSetLayout(ifftPlan, CLFFT_HERMITIAN_INTERLEAVED, CLFFT_REAL);
-	clfftSetResultLocation(ifftPlan, CLFFT_INPLACE);
-	clfftSetPlanBatchSize(ifftPlan, 1);
-	//clfftSetPlanDistance(ifftPlan, bufferDistance, bufferDistance/2);
+	errFFT = clfftSetPlanPrecision(ifftPlanBatch, precision);
+	checkClfftErrorCode(errFFT, "clfftSetPlanPrecision()");
+	errFFT = clfftSetLayout(ifftPlanBatch, CLFFT_HERMITIAN_INTERLEAVED, CLFFT_REAL);
+	checkClfftErrorCode(errFFT, "clfftSetLayout()");
+	errFFT = clfftSetResultLocation(ifftPlanBatch, CLFFT_INPLACE);
+	checkClfftErrorCode(errFFT, "clfftSetResultLocation()");
+	errFFT = clfftSetPlanBatchSize(ifftPlanBatch, blockChannels);
+	checkClfftErrorCode(errFFT, "clfftSetPlanBatchSize()");
+	errFFT = clfftSetPlanDistance(ifftPlanBatch, bufferDistance/2, bufferDistance);
+	checkClfftErrorCode(errFFT, "clfftSetPlanDistance()");
 }
 
 template<class T>
@@ -106,8 +112,6 @@ FilterProcessor<T>::~FilterProcessor()
 	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
 	errFFT = clfftDestroyPlan(&ifftPlanBatch);
 	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
-	errFFT = clfftDestroyPlan(&ifftPlan);
-	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
 }
 
 template<class T>
@@ -115,6 +119,21 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 {
 	cl_int err;
 	clfftStatus errFFT;
+
+#ifndef NDEBUG
+	{
+		size_t inSize;
+		err = clGetMemObjectInfo(inBuffer, CL_MEM_SIZE, sizeof(size_t), &inSize, nullptr);
+		checkClErrorCode(err, "clGetMemObjectInfo");
+
+		size_t outSize;
+		err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
+		checkClErrorCode(err, "clGetMemObjectInfo");
+
+		assert(inSize >= (blockLength + 4)*blockChannels*sizeof(T) && "The inBuffer is too small.");
+		assert(outSize >= (blockLength + 4)*blockChannels*sizeof(T) && "The inBuffer is too small.");
+	}
+#endif
 
 	if (coefficientsChanged)
 	{
@@ -148,13 +167,13 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 
 	// TODO: apply a window function (on the device)
 
-	//printBuffer("before_fft.txt", inBuffer, queue);
+	//OpenCLContext::printBuffer("before_fft.txt", inBuffer, queue);
 
 	// FFT.
 	errFFT = clfftEnqueueTransform(fftPlanBatch, CLFFT_FORWARD, 1, &queue, 0, nullptr, nullptr, &inBuffer, &outBuffer, nullptr);
 	checkClfftErrorCode(errFFT, "clfftEnqueueTransform");
 
-	//printBuffer("after_fft.txt", outBuffer, queue);
+	//OpenCLContext::printBuffer("after_fft.txt", outBuffer, queue);
 
 	// Multiply.
 	err = clSetKernelArg(filterKernel, 0, sizeof(cl_mem), &outBuffer);
@@ -168,13 +187,13 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 	err = clEnqueueNDRangeKernel(queue, filterKernel, 2, nullptr, globalWorkSize, nullptr, 0, nullptr, nullptr);
 	checkClErrorCode(err, "clEnqueueNDRangeKernel()");
 
-	//printBuffer("after_multiply.txt", outBuffer, queue);
+	//OpenCLContext::printBuffer("after_multiply.txt", outBuffer, queue);
 
 	// IFFT.
 	errFFT = clfftEnqueueTransform(ifftPlanBatch, CLFFT_BACKWARD, 1, &queue, 0, nullptr, nullptr, &outBuffer, nullptr, nullptr);
 	checkClfftErrorCode(errFFT, "clfftEnqueueTransform");
 
-	//printBuffer("after_ifft.txt", outBuffer, queue);
+	//OpenCLContext::printBuffer("after_ifft.txt", outBuffer, queue);
 }
 
 template<class T>

@@ -56,7 +56,6 @@ private:
 	clfftPlanHandle fftPlan;
 	clfftPlanHandle fftPlanBatch;
 	clfftPlanHandle ifftPlanBatch;
-	clfftPlanHandle ifftPlan;
 };
 
 #endif // FILTERPROCESSOR_H

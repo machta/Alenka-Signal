@@ -69,6 +69,24 @@ void test(const string& file, DETECTOR_SETTINGS settings)
 	checkClfftErrorCode(errFFT, "clfftTeardown()");
 }
 
+void printException(function<void (void)> fun)
+{
+	try
+	{
+		fun();
+	}
+	catch (exception& e)
+	{
+		cerr << "Caught an std exception: " << e.what() << endl;
+		throw;
+	}
+	catch (...)
+	{
+		cerr << "Caught an exception." << endl;
+		throw;
+	}
+}
+
 } // namespace
 
 class spikedet_test : public ::testing::Test
@@ -86,35 +104,36 @@ protected:
 
 TEST_F(spikedet_test, IED_P001_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P001.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P001.edf", defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P002_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P002.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P002.edf", defaultSettings); }));
+	//test<float>(path + "IED_P002.edf", defaultSettings);
 }
 
 TEST_F(spikedet_test, IED_P003_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P003.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P003.edf", defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P004_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P004.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P004.edf", defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P005_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P005.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P005.edf", defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P006_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P006.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P006.edf", defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P007_default_float)
 {
-	EXPECT_NO_THROW(test<float>(path + "IED_P007.edf", defaultSettings));
+	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P007.edf", defaultSettings); }));
 }

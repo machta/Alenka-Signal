@@ -399,7 +399,10 @@ void OpenCLContext::printBuffer(FILE* file, float* data, int n)
 #ifndef NDEBUG
 	for (int i = 0; i < n; ++i)
 	{
-		fprintf(file, "%f\n", data[i]);
+		float tmp = data[i];
+		if (isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
+			tmp = 111111111;
+		fprintf(file, "%f\n", tmp);
 	}
 #else
 	(void)file;
@@ -458,15 +461,15 @@ void OpenCLContext::printBuffer(const string& filePath, cl_mem buffer, cl_comman
 #endif
 }
 
-
-
-
 void OpenCLContext::printBufferDouble(FILE* file, double* data, int n)
 {
 #ifndef NDEBUG
 	for (int i = 0; i < n; ++i)
 	{
-		fprintf(file, "%f\n", data[i]);
+		double tmp = data[i];
+		if (isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
+			tmp = 111111111;
+		fprintf(file, "%f\n", tmp);
 	}
 #else
 	(void)file;

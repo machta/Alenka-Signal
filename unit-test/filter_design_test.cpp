@@ -41,8 +41,8 @@ void test(function<void(T, T)> compare, T* answer)
 	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, nullptr);
 
 	cl_mem_flags flags = CL_MEM_READ_WRITE;
-	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, n*sizeof(T), signal.data(), nullptr);
-	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, n*sizeof(T), nullptr, nullptr);
+	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), nullptr);
+	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, nullptr);
 
 	Filter<T> filter(8, 200);
 	filter.lowpass(true);

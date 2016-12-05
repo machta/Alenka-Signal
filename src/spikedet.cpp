@@ -528,10 +528,10 @@ Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, Open
 	queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
 	checkClErrorCode(err, "clCreateCommandQueue");
 
-	inBuffer = clCreateBuffer(context->getCLContext(), flags, BLOCK_SIZE*channelCount*sizeof(T), nullptr, &err);
+	inBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
-	outBuffer = clCreateBuffer(context->getCLContext(), flags, BLOCK_SIZE*channelCount*sizeof(T), nullptr, &err);
+	outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 }
 
@@ -1040,18 +1040,18 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 	int len = stop - start;
 	len = (len + step - 1)/step*step;
 
-	segmentBuffer.resize(len*channelCount);
-	stepBuffer.resize(BLOCK_SIZE*channelCount);
+	stepBuffer.resize((BLOCK_SIZE + 4)*channelCount);
 
+	segmentBuffer.resize(len*channelCount);
 	vector<T*> channelPointers(channelCount);
 	for (int i = 0; i < channelCount; i++)
 		channelPointers[i] = segmentBuffer.data() + i*len;
 
 	for (int i = 0; i < len; i += step)
 	{
-		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1);
+		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1 + 4);
 
-		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, BLOCK_SIZE*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
+		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, (BLOCK_SIZE + 4)*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueWriteBuffer()");
 
 		filterProcessor->process(inBuffer, outBuffer, queue);
@@ -1060,14 +1060,14 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 
 		for (int j = 0; j < channelCount; j++)
 		{
-			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*BLOCK_SIZE + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
+			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*(BLOCK_SIZE + 4) + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
 			checkClErrorCode(err, "clEnqueueReadBuffer()");
 
 			channelPointers[j] += step;
 		}
 	}
 
-	//OpenCLContext::printBuffer("spikedet_segment.txt", segmentBuffer.data(), (stop - start)*channelCount);
+	//OpenCLContext::printBuffer("spikedet_segment.txt", segmentBuffer.data(), len*channelCount);
 
 	err = clFinish(queue);
 	checkClErrorCode(err, "clFinish()");
@@ -1356,7 +1356,7 @@ double COneChannelDetect::variance(wxVector<double>& data, const double & mean)
 wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time)
 {
 	unsigned int         size = envelope.size();
-	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0);
+	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0); // Possible leak.
 	wxVector<int>   	 point[2];
 	wxVector<SIGNALTYPE> seg, seg_s;
 	wxVector<int>        tmp_diff_vector;
