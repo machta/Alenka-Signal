@@ -17,11 +17,11 @@ vector<T> Filter<T>::computeSamples()
 		double f = 2.*i/M;
 		double val = 1;
 
-		if (lowpassOn && f >= lowpassF)
+		if (lowpassOn && f >= lowpassF - 2/Fs*2)
 		{
 			val = 0;
 		}
-		else if (highpassOn && f <= highpassF)
+		else if (highpassOn && f <= highpassF + 1/Fs*2)
 		{
 			val = 0;
 		}

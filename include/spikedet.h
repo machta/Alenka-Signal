@@ -236,8 +236,8 @@ private:
 	std::vector<T>* prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop);
 	FilterProcessor<T>* filterProcessor = nullptr;
 	int decimationF;
-	cl_command_queue queue;
-	cl_mem inBuffer, outBuffer;
+	cl_command_queue queue = nullptr;
+	cl_mem inBuffer = nullptr, outBuffer = nullptr;
 	std::vector<T> segmentBuffer, stepBuffer;
 };
 

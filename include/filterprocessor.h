@@ -9,6 +9,11 @@
 #include <cassert>
 #include <vector>
 
+enum class WindowFunction
+{
+	None, Hamming, Blackman
+};
+
 /**
  * @brief This class handles filtering of data blocks.
  */
@@ -16,16 +21,15 @@ template<class T>
 class FilterProcessor
 {
 public:
-	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context);
+	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context, WindowFunction windowFunction = WindowFunction::None);
 	~FilterProcessor();
 
 	void process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue);
 	void changeFilter(const std::vector<T>& coefficients)
 	{
+		coefficientsChanged = true;
 		M = coefficients.size();
 		this->coefficients = coefficients;
-
-		coefficientsChanged = true;
 	}
 	void changeSampleFilter(int M, const std::vector<T>& samples);
 	int delaySamples() const
@@ -44,6 +48,7 @@ public:
 private:
 	unsigned int blockLength;
 	unsigned int blockChannels;
+	WindowFunction windowFunction;
 
 	int M;
 	bool coefficientsChanged = false;

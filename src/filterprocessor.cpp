@@ -15,11 +15,25 @@ const char* kernels =
 #include "kernels.cl"
 ;
 
+template<class T>
+T hammingWindow(int n, int M)
+{
+	const T tmp = 2*M_PI*n/(M - 1);
+	return 0.54 - 0.46*cos(tmp);
+}
+
+template<class T>
+T blackmanWindow(int n, int M)
+{
+	const T a = 0.16, a0 = (1 - a)/2, a1 = 0.5, a2 = a/2, tmp = 2*M_PI*n/(M - 1);
+	return a0 - a1*cos(tmp) + a2*cos(2*tmp);
+}
+
 } // namespace
 
 template<class T>
-FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
-	: blockLength(blockLength), blockChannels(channels)
+FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context, WindowFunction windowFunction)
+	: blockLength(blockLength), blockChannels(channels), windowFunction(windowFunction)
 {
 	assert(blockLength%2 == 0);
 
@@ -201,6 +215,7 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 {
 	assert((int)samples.size() == (M + 1)/2 && "Assure the right number of samples was provided.");
 
+	coefficientsChanged = true;
 	this->M = M;
 	//this->samples = samples;
 
@@ -239,7 +254,7 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 		inArray[i] *= alglib::complex(tmp.real(), tmp.imag());
 	}
 
-	// iFFT
+	// Compute the iFFT of H to make the FIR filter coefficients h. (eq. 10.2.33)
 	alglib::real_1d_array outArray;
 	outArray.setlength(M);
 	alglib::fftr1dinv(inArray, M, outArray);
@@ -248,7 +263,21 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 	for (int i = 0; i < M; i++)
 		coefficients[i] = outArray[i];
 
-	coefficientsChanged = true;
+	// Try to improve filter characteristics by applying a window function.
+	if (windowFunction == WindowFunction::Hamming)
+	{
+		for (int i = 0; i < M; ++i)
+		{
+			coefficients[i] *= hammingWindow<T>(i, M);
+		}
+	}
+	else if (windowFunction == WindowFunction::Blackman)
+	{
+		for (int i = 0; i < M; ++i)
+		{
+			coefficients[i] *= blackmanWindow<T>(i, M);
+		}
+	}
 }
 
 template class FilterProcessor<float>;
