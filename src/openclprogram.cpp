@@ -1,9 +1,14 @@
-#include "openclprogram.h"
+#include <AlenkaSignal/openclprogram.h>
+
+#include <AlenkaSignal/openclcontext.h>
 
 #include <cstdlib>
 #include <cassert>
 
 using namespace std;
+
+namespace AlenkaSignal
+{
 
 OpenCLProgram::OpenCLProgram(const string& source, OpenCLContext* context) : context(context)
 {
@@ -44,11 +49,25 @@ OpenCLProgram::OpenCLProgram(const string& source, OpenCLContext* context) : con
 	}
 }
 
-
 OpenCLProgram::~OpenCLProgram()
 {
 	cl_int err = clReleaseProgram(program);
 	checkClErrorCode(err, "clReleaseProgram()");
+}
+
+cl_kernel OpenCLProgram::createKernel(const string& kernelName)
+{
+	if (compilationSuccessful() == false)
+	{
+		throw std::runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");
+	}
+
+	cl_int err;
+
+	cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err);
+	checkClErrorCode(err, "clCreateKernel()");
+
+	return kernel;
 }
 
 string OpenCLProgram::getCompilationLog() const
@@ -70,3 +89,5 @@ string OpenCLProgram::getCompilationLog() const
 
 	return str;
 }
+
+} // namespace AlenkaSignal

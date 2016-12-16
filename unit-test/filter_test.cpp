@@ -1,13 +1,15 @@
 #include "gtest/gtest.h"
 
-#include "filterprocessor.h"
-#include "filter.h"
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/filter.h>
+#include <AlenkaSignal/filterprocessor.h>
 
 #include <algorithm>
 #include <functional>
 #include <cmath>
 
 using namespace std;
+using namespace AlenkaSignal;
 
 namespace
 {

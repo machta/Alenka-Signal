@@ -1,13 +1,16 @@
-#ifndef FILTERPROCESSOR_H
-#define FILTERPROCESSOR_H
-
-#include "openclcontext.h"
-#include "openclprogram.h"
+#ifndef ALENKASIGNAL_FILTERPROCESSOR_H
+#define ALENKASIGNAL_FILTERPROCESSOR_H
 
 #include <clFFT.h>
 
 #include <cassert>
 #include <vector>
+
+
+namespace AlenkaSignal
+{
+
+class OpenCLContext;
 
 enum class WindowFunction
 {
@@ -63,4 +66,6 @@ private:
 	clfftPlanHandle ifftPlanBatch;
 };
 
-#endif // FILTERPROCESSOR_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_FILTERPROCESSOR_H

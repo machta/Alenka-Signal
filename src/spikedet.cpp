@@ -1,6 +1,8 @@
-#include "spikedet.h"
+#include <AlenkaSignal/spikedet.h>
 
-#include "filter.h"
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/filter.h>
+#include <AlenkaSignal/filterprocessor.h>
 
 #include "interpolation.h"
 #include "fasttransforms.h"
@@ -12,129 +14,10 @@
 
 #include <Eigen/Dense>
 using namespace std;
+using namespace AlenkaSignal;
 
 namespace
 {
-
-/**
- * Structure containing output data from \ref COneChannelDetect
- */
-typedef struct oneChannelDetectRet
-{
-public:
-	wxVector<bool>*   	 m_markersHigh;
-	wxVector<bool>*   	 m_markersLow;
-	wxVector<double>  	 m_prahInt[2];
-	wxVector<double>  	 m_envelopeCdf;
-	wxVector<double>  	 m_envelopePdf;
-	wxVector<SIGNALTYPE> m_envelope;
-
-	/// A constructor
-	oneChannelDetectRet(wxVector<bool>*& markersHigh, wxVector<bool>*& markersLow, const wxVector<double> prahInt[2],
-						const wxVector<double> envelopeCdf, const wxVector<double> envelopePdf, const wxVector<SIGNALTYPE>& envelope)
-		: m_markersHigh(markersHigh), m_markersLow(markersLow)
-	{
-		m_prahInt[0].assign(prahInt[0].begin(), prahInt[0].end());
-		m_prahInt[1].assign(prahInt[1].begin(), prahInt[1].end());
-		m_envelopeCdf.assign(envelopeCdf.begin(), envelopeCdf.end());
-		m_envelopePdf.assign(envelopePdf.begin(), envelopePdf.end());
-		m_envelope.assign(envelope.begin(), envelope.end());
-	}
-
-	/// A destructor
-	~oneChannelDetectRet()
-	{
-		/* empty */
-	}
-
-} ONECHANNELDETECTRET;
-
-/**
- * Implementation "one_channel_detect" function from reference implementation of spike detector.
- */
-class COneChannelDetect
-{
-// methods
-public:
-	/**
-	 * A constructor.
-	 * @param data input data
-	 * @param settings settings od the detector
-	 * @param fs sample rate
-	 * @param index indexs
-	 * @param channel number of channel
-	 */
-	COneChannelDetect(const wxVector<SIGNALTYPE>* data, const DETECTOR_SETTINGS* settings, const int& fs, const wxVector<int>* index, const int& channel);
-
-	/**
-	 * A virtual desctructor.
-	 */
-	virtual ~COneChannelDetect();
-
-	/**
-	 * This is the entry point of the thread.
-	 */
-	virtual ONECHANNELDETECTRET* Entry();
-
-private:
-	/**
-	 * Calculating a mean from data in vector.
-	 * @param data a vector of input data
-	 * @return a mean
-	 */
-	double mean(wxVector<double>& data);
-
-	/**
-	 * Calculating a variance from data in vector.
-	 * @param data input vector with data
-	 * @param mean mean of data in vector
-	 * @return a variance
-	 */
-	double variance(wxVector<double>& data, const double & mean);
-
-	/**
-	 * Detection of local maxima in envelope.
-	 * @param envelope envelope of input channel
-	 * @param prah_int threeshold curve
-	 * @param polyspike_union_time polyspike union time
-	 * @return vector cintaining markers of local maxima
-	 */
-	wxVector<bool>* localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time);
-
-	/**
-	 * Detecting of union and their merging.
-	 * @param marker1 markers of spikes
-	 * @param envelope envelope of input channel
-	 * @param union_samples union samples time
-	 */
-	void detectionUnion(wxVector<bool>* marker1, wxVector<SIGNALTYPE>& envelope, const double& union_samples);
-
-	/**
-	 * Finding of the highes maxima of the section with local maxima.
-	 * implement:
-	 * point(:,1)=find(diff([0;marker1])>0); % start
-	 * point(:,2)=find(diff([marker1;0])<0); % end
-	 * @param point
-	 * @param marker1
-	 */
-	void findStartEndCrossing(wxVector<int> point[2], const wxVector<bool>* marker1);
-
-// variables
-public:
-	/* none */
-
-private:
-	/// input data
-	const wxVector<SIGNALTYPE>* m_data;
-	/// settinggs of the detector
-	const DETECTOR_SETTINGS*    m_settings;
-	/// sample rate
-	const int 			  		m_fs;
-	/// indexs of suspects areas
-	const wxVector<int>* 		m_index;
-	/// channel number
-	const int 					m_channel;
-};
 
 namespace CDSP
 {
@@ -767,760 +650,125 @@ void filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const wxVect
 
 } // namespace CDSP
 
-const int BLOCK_SIZE = 1024*16/*512*/;
-
-int nearestGreaterDivisor(int a, int b)
+/**
+ * Structure containing output data from \ref COneChannelDetect
+ */
+typedef struct oneChannelDetectRet
 {
-	for (int i = a; a < b; i++)
+public:
+	wxVector<bool>*   	 m_markersHigh;
+	wxVector<bool>*   	 m_markersLow;
+	wxVector<double>  	 m_prahInt[2];
+	wxVector<double>  	 m_envelopeCdf;
+	wxVector<double>  	 m_envelopePdf;
+	wxVector<SIGNALTYPE> m_envelope;
+
+	/// A constructor
+	oneChannelDetectRet(wxVector<bool>*& markersHigh, wxVector<bool>*& markersLow, const wxVector<double> prahInt[2],
+						const wxVector<double> envelopeCdf, const wxVector<double> envelopePdf, const wxVector<SIGNALTYPE>& envelope)
+		: m_markersHigh(markersHigh), m_markersLow(markersLow)
 	{
-		if (b%i == 0)
-			return i;
+		m_prahInt[0].assign(prahInt[0].begin(), prahInt[0].end());
+		m_prahInt[1].assign(prahInt[1].begin(), prahInt[1].end());
+		m_envelopeCdf.assign(envelopeCdf.begin(), envelopeCdf.end());
+		m_envelopePdf.assign(envelopePdf.begin(), envelopePdf.end());
+		m_envelope.assign(envelope.begin(), envelope.end());
 	}
-	return b;
-}
 
-} // namespace
-
-// ------------------------------------------------------------------------------------------------
-// CDetectorOutput
-// ------------------------------------------------------------------------------------------------
-
-/// A constructor.
-CDetectorOutput::CDetectorOutput()
-{
-	/* empty */
-}
-
-/// A virtual destructor.
-CDetectorOutput::~CDetectorOutput()
-{
-	/* empty */
-}
-
-
-/// Add data to the vectors.
-void CDetectorOutput::Add(const double& pos, const double& dur, const int& chan, const double& con, const double& weight, const double& pdf)
-{
-	m_pos.push_back(pos);
-	m_dur.push_back(dur);
-	m_chan.push_back(chan);
-	m_con.push_back(con);
-	m_weight.push_back(weight);
-	m_pdf.push_back(pdf);
-}
-
-///Erase records at positions.
-void CDetectorOutput::Remove(const wxVector<int>& pos)
-{
-	unsigned i, counter = 0;
-
-	for (i = 0; i < pos.size(); i++)
+	/// A destructor
+	~oneChannelDetectRet()
 	{
-		if (m_pos.size() < pos.at(i)-counter || pos.at(i)-counter < 0)
-			continue;
-
-		m_pos.erase(m_pos.begin()+pos.at(i)-counter);
-		m_dur.erase(m_dur.begin()+pos.at(i)-counter);
-		m_chan.erase(m_chan.begin()+pos.at(i)-counter);
-		m_con.erase(m_con.begin()+pos.at(i)-counter);
-		m_weight.erase(m_weight.begin()+pos.at(i)-counter);
-		m_pdf.erase(m_pdf.begin()+pos.at(i)-counter);
-
-		counter++;
+		/* empty */
 	}
-}
 
-// ------------------------------------------------------------------------------------------------
-// CDischarges
-// ------------------------------------------------------------------------------------------------
-
-/// A constructor.
-CDischarges::CDischarges(const int& countChannels)
-{
-	m_countChannels = countChannels;
-
-	m_MV   = new std::vector<double>[countChannels];
-	m_MA   = new std::vector<double>[countChannels];
-	m_MP   = new std::vector<double>[countChannels];
-	m_MD   = new std::vector<double>[countChannels];
-	m_MW   = new std::vector<double>[countChannels];
-	m_MPDF = new std::vector<double>[countChannels];
-}
-
-/// A virual destructor.
-CDischarges::~CDischarges()
-{
-	delete [] m_MV;
-	delete [] m_MA;
-	delete [] m_MP;
-	delete [] m_MD;
-	delete [] m_MW;
-	delete [] m_MPDF;
-}
+} ONECHANNELDETECTRET;
 
 /**
- * Erase records.
- * @param pos positions of records.
+ * Implementation "one_channel_detect" function from reference implementation of spike detector.
  */
-void CDischarges::Remove(const wxVector<int>& pos)
+class COneChannelDetect
 {
-	unsigned i, channel, counter = 0;
-
-	for (i = 0; i < pos.size(); i++)
-	{
-
-		for (channel = 0; channel < m_countChannels; channel++)
-		{
-			if (m_MV[channel].size() < pos.at(i)-counter || pos.at(i)-counter < 0)
-				continue;
-
-			m_MV[channel].erase(m_MV[channel].begin()+pos.at(i)-counter);
-			m_MA[channel].erase(m_MA[channel].begin()+pos.at(i)-counter);
-			m_MP[channel].erase(m_MP[channel].begin()+pos.at(i)-counter);
-			m_MW[channel].erase(m_MW[channel].begin()+pos.at(i)-counter);
-			m_MPDF[channel].erase(m_MPDF[channel].begin()+pos.at(i)-counter);
-			m_MD[channel].erase(m_MD[channel].begin()+pos.at(i)-counter);
-		}
-		counter++;
-	}
-
-}
-
-template<class T>
-Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
-	fs(fs), channelCount(channelCount), settings(settings), context(context)
-{
-	decimationF = settings.m_decimation;
-	decimationF = nearestGreaterDivisor(min(fs, decimationF), fs);
-
-	if (decimationF >= fs)
-		return;
-
-	int M = fs + 1;
-	Filter<T> filter(M, fs);
-	//filter.notch(true);
-	//filter.highpass(true);
-	filter.lowpass(true);
-
-	//filter.setNotch(settings.m_main_hum_freq);
-	//filter.setHighpass(settings.m_band_low);
-	//filter.setLowpass(min(decimationF, settings.m_band_high));
-	filter.setLowpass(decimationF);
-
-	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context, WindowFunction::Hamming);
-	filterProcessor->changeSampleFilter(M, filter.computeSamples());
-
-#ifndef NDEBUG
-	//FILE* file = fopen("spikedet_coefficients.txt", "w");
-	//filter.printCoefficients(file, filterProcessor->getCoefficients());
-	//fclose(file);
-#endif
-
-	cl_int err;
-	cl_mem_flags flags = CL_MEM_READ_WRITE;
-
-	queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
-	checkClErrorCode(err, "clCreateCommandQueue");
-
-	inBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
-	checkClErrorCode(err, "clCreateBuffer");
-
-	outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
-	checkClErrorCode(err, "clCreateBuffer");
-}
-
-template<class T>
-Spikedet<T>::~Spikedet()
-{
-	delete filterProcessor;
-
-	cl_int err;
-
-	if (queue != nullptr)
-	{
-		err = clReleaseCommandQueue(queue);
-		checkClErrorCode(err, "clReleaseCommandQueue()");
-	}
-
-	if (inBuffer != nullptr)
-	{
-		err = clReleaseMemObject(inBuffer);
-		checkClErrorCode(err, "clReleaseMemObject()");
-	}
-	if (outBuffer != nullptr)
-	{
-		err = clReleaseMemObject(outBuffer);
-		checkClErrorCode(err, "clReleaseMemObject()");
-	}
-}
-
-template<class T>
-void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges)
-{
-	m_out = out;
-	m_discharges = discharges;
-	int 				  i, j, k, indexSize;
-	int 				  start, stop, tmp;
-	//wxVector<SIGNALTYPE>* segments = NULL;
-	wxVector<int>         indexStart, indexStop;
-
-	BANDWIDTH 			  bandwidth(m_settings->m_band_low, m_settings->m_band_high);
-
-	CDetectorOutput*      subOut 		= NULL;
-	CDischarges*          subDischarges = NULL;
-
-	int 				  posSize, disSize, tmpFirst, tmpLast;
-	double 				  minMP, tmpShift;
-
-	wxVector<int>         removeOut;
-	wxVector<int>         removeDish;
-
-//	int 				  countSamples = m_model->GetCountSamples();
-//	int 				  countChannels = m_model->GetCountChannels();
-//	int 				  fs = m_model->GetFS();
-	int64_t				  countSamples = loader->sampleCount();
-	int 				  countChannels = loader->channelCount();
-
-	int    	  			  winsize  = m_settings->m_winsize * fs;
-
-	//wxThreadEvent         event(wxEVT_THREAD, DETECTOR_EVENT);
-	int 				  progressBy;
-
-	// verify buffering
-	tmp = countSamples / fs;
-	if (m_settings->m_buffering > tmp)
-		m_settings->m_buffering = tmp;
-
-	// Signal buffering
-	int N_seg = floor(countSamples/(m_settings->m_buffering * fs));
-	if (N_seg < 1) N_seg = 1;
-	int T_seg = round((double)countSamples/(double)N_seg/fs);
-		// Indexs of segments with two-side overlap
-	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, fs, winsize);
-
-	progressBy = round(100/(float)indexStart.size());
-
-	// starting analysis on the segmented data
-	indexSize = indexStop.size();
-	for (i = 0; i < indexSize; i ++)
-	{
-		start = indexStart.at(i);
-		stop = indexStop.at(i);
-
-//		if (TestDestroy())
-//		{
-//			std::cout << "cancel" << std::endl;
-//			break;
-//		}
-
-//		segments = m_model->GetSegment(start, stop);
-//		if (segments == NULL)
-//		{
-//			// error - end of file?
-//			break;
-//		}
-		spikeDetector(loader, start, stop, countChannels, fs, bandwidth, subOut, subDischarges);
-		//continue;
-		//delete [] segments;
-		//segments = NULL;
-
-		// send progress to main frame
-		//m_progress += progressBy;
-		//event.SetInt(m_progress);
-		//wxQueueEvent((wxEvtHandler*)m_frame, event.Clone());
-
-		// removing of two side overlap detections
-		posSize = subOut->m_pos.size();
-		disSize = subDischarges->m_MP[0].size();
-
-		if (i > 0)
-			tmpFirst = 1;
-		else tmpFirst = 0;
-
-		if (i < (int)indexStop.size()-1)
-			tmpLast = 1;
-		else tmpLast = 0;
-
-		if (posSize > 0)
-		{
-			if (indexStop.size() > 1)
-			{
-				for (j = 0; j < posSize; j++)
-				{
-					if (subOut->m_pos.at(j) < tmpFirst*3*m_settings->m_winsize ||
-						subOut->m_pos.at(j) > ((stop - start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
-							removeOut.push_back(j);
-				}
-				subOut->Remove(removeOut);
-
-				for (j = 0; j < disSize; j++)
-				{
-					minMP = INT_MAX;
-					for (k = 0; k < countChannels; k++)
-						if (subDischarges->m_MP[k].at(j) < minMP)
-								minMP = subDischarges->m_MP[k].at(j);
-
-					if (minMP < tmpFirst*3*m_settings->m_winsize ||
-						minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
-								removeDish.push_back(j);
-				}
-				subDischarges->Remove(removeDish);
-			}
-		}
-
-		posSize = subOut->m_pos.size();
-		disSize = subDischarges->m_MP[0].size();
-		tmpShift = (indexStart.at(i)+1)/(double)fs - 1/(double)fs;
-
-		// connect out
-		for (j = 0; j < posSize; j++)
-		{
-			m_out->Add(
-					subOut->m_pos.at(j) + tmpShift,
-					subOut->m_dur.at(j),
-					subOut->m_chan.at(j),
-					subOut->m_con.at(j),
-					subOut->m_weight.at(j),
-					subOut->m_pdf.at(j)
-				);
-		}
-
-		// connect discharges
-		for (j = 0; j < countChannels; j++)
-		{
-			for (k = 0; k < (int)subDischarges->m_MP[j].size(); k++)
-			{
-				subDischarges->m_MP[j].at(k) += tmpShift;
-			}
-		}
-
-		for (j = 0; j < countChannels; j++)
-		{
-			m_discharges->m_MV[j].insert(m_discharges->m_MV[j].end(), subDischarges->m_MV[j].begin(), subDischarges->m_MV[j].end());
-			m_discharges->m_MA[j].insert(m_discharges->m_MA[j].end(), subDischarges->m_MA[j].begin(), subDischarges->m_MA[j].end());
-			m_discharges->m_MP[j].insert(m_discharges->m_MP[j].end(), subDischarges->m_MP[j].begin(), subDischarges->m_MP[j].end());
-			m_discharges->m_MD[j].insert(m_discharges->m_MD[j].end(), subDischarges->m_MD[j].begin(), subDischarges->m_MD[j].end());
-			m_discharges->m_MW[j].insert(m_discharges->m_MW[j].end(), subDischarges->m_MW[j].begin(), subDischarges->m_MW[j].end());
-			m_discharges->m_MPDF[j].insert(m_discharges->m_MPDF[j].end(), subDischarges->m_MPDF[j].begin(), subDischarges->m_MPDF[j].end());
-		}
-
-		// clear
-		if (subOut)
-			delete subOut;
-		if (subDischarges)
-			delete subDischarges;
-		removeOut.clear();
-		removeDish.clear();
-	}
-}
-
-/// Calculate the starts and ends of indexes for @see #spikeDetector
-template<class T>
-void Spikedet<T>::getIndexStartStop(wxVector<int>& indexStart, wxVector<int>& indexStop, const int& cntElemInCh, const double& T_seg,
-									   const int& fs, const int& winsize)
-{
-	int start = 0;
-	int i, startSize, end;
-
-	while (start < cntElemInCh)
-	{
-		indexStart.push_back(start);
-		start += T_seg * fs;
-	}
-
-	startSize = indexStart.size();
-	if (indexStart.size() > 1)
-	{
-		for (i = 1; i < startSize; i++)
-			indexStart.at(i) -= 3*winsize;
-
-		for (i = 0; i < startSize; i++)
-		{
-			end = indexStart.at(i) + T_seg*fs + 2*(3*winsize);
-			indexStop.push_back(end);
-		}
-
-		indexStop.front() -= 3*winsize;
-		indexStop.back() = cntElemInCh;
-
-		if (indexStop.back() - indexStart.back() < T_seg * fs)
-		{
-			indexStart.pop_back();
-			indexStart.pop_back();
-			indexStop.back() = cntElemInCh;
-		}
-	}
-	else
-	{
-		indexStop.push_back(cntElemInCh);
-	}
-}
-
-
-/// Spike detector
-template<class T>
-void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
-									CDetectorOutput*& out, CDischarges*& discharges)
-{
-	double 				  k1 = m_settings->m_k1;
-	double 				  k2 = m_settings->m_k2;
-	double 				  discharge_tol = m_settings->m_discharge_tol;
-	int 				  decimation = /*m_settings->m_decimation*/decimationF;
-	int                   fs = inputFS;
-
-	int    		  		  countRecords = stopSample - startSample;
-	wxVector<int> 		  index;
-	int 		  		  stop, step;
-	int	  	        	  i, j;
-	float 				  k;
-	int 				  tmp_start;
-	COneChannelDetect**   threads;
-	ONECHANNELDETECTRET** ret;
-
-	int    	  			  winsize  = m_settings->m_winsize * fs;
-	double 	  			  noverlap = m_settings->m_noverlap * fs;
-
-	// OUT
-	double 				  t_dur = 0.005;
-	wxVector<bool> 		  ovious_M(countRecords, false);
-	double 				  position;
-	bool 				  tmp_sum = false;
-
-	wxVector<double>** 	  m;
-	int 				  tmp_round;
-	float 				  tmp_start2, tmp_stop;
-
-		// definition of multichannel events vectors
-	wxVector<int>* 		  point = new wxVector<int>[2];
-	int 				  tmp_old = 0;
-	int 				  tmp_act = 0;
-	int 				  channel;
-
-		// MV && MA && MW && MPDF && MD && MP
-	double 				  tmp_seg;
-	double   			  tmp_mv;
-	double 				  tmp_max_ma;
-	double 				  tmp_max_mw;
-	double 				  tmp_max_mpdf;
-	double 				  tmp_md;
-	double 				  tmp_mp;
-	int    				  tmp_row;
-
-	wxVector<T>* data = prepareSegment(loader, startSample, stopSample);
-
-	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
-	if (fs > decimation)
-	{
-		//CDSP::Resample(data, countChannels, fs, decimation);
-
-		fs = decimation;
-		winsize  = m_settings->m_winsize * fs;
-		noverlap = m_settings->m_noverlap * fs;
-		countRecords = data[0].size();
-	}
-
-	// Segmentation index
-	stop = countRecords - winsize + 1;
-
-	if (noverlap < 1)
-		step = round(winsize * (1 - noverlap));
-	else
-		step = winsize - noverlap;
-
-	for (i = 0; i < stop; i += step)
-		index.push_back(i);
-
-	// FILTERING
-	// filtering Nx50Hz
-	CDSP::Filt50Hz(data, countChannels, fs, m_settings->m_main_hum_freq, bandwidth);
-
-	// filtering 10-60Hz
-	CDSP::Filtering(data, countChannels, fs, bandwidth);
-
-	// local maxima detection
-	ret = new ONECHANNELDETECTRET*[countChannels];
-	threads = new COneChannelDetect*[countChannels];
-	for (i = 0; i < countChannels; i++)
-	{
-		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
-		//threads[i]->Run();
-		ret[i] = threads[i]->Entry();
-	}
-
-	for (i = 0; i < countChannels; i++)
-	{
-		//ret[i] = (ONECHANNELDETECTRET*)threads[i]->Wait();
-		delete threads[i];
-	}
-
-	delete[] data;
-	//return;
-
-	delete [] threads;
-	// processing detection results
-	for (i = 0; i < countChannels; i++)
-	{
-		if (ret[i] == NULL)
-			continue;
-
-		//% first and last second is not analyzed (filter time response etc.)
-		// first section
-		for (j = 0; j < fs; j++)
-		{
-			ret[i]->m_markersHigh->at(j) = false;
-			ret[i]->m_markersLow->at(j) = false;
-		}
-		// last section
-		tmp_start = ret[i]->m_markersHigh->size() - fs - 1;
-		for (j = tmp_start; j < (int)ret[i]->m_markersHigh->size(); j++)
-		{
-			ret[i]->m_markersHigh->at(j) = false;
-			ret[i]->m_markersLow->at(j) = false;
-		}
-	}
-
-	// OUT
-	out = new CDetectorOutput();
-	for (channel = 0; channel < countChannels; channel++)
-	{
-		for (j = 0; j < countRecords; j++)
-		{
-			if (ret[channel] == NULL)
-				continue;
-
-			if (ret[channel]->m_markersHigh->at(j) == true)
-			{
-				ovious_M.at(j) = true;
-				position = (j+1)/(double)fs;
-
-				out->Add(position, t_dur, channel + 1, 1, ret[channel]->m_envelopeCdf.at(j), ret[channel]->m_envelopePdf.at(j));
-			}
-		}
-	}
-
-	// ambiguous spike events output
-	if (k1 != k2)
-	{
-		for (channel = 0; channel < countChannels; channel++)
-		{
-			if (ret[channel] == NULL)
-				continue;
-
-			for (j = 0; j < countRecords; j++)
-			{
-				if (ret[channel]->m_markersLow->at(j) == true)
-				{
-					if (ret[channel]->m_markersHigh->at(j) == true)
-						continue;
-
-					tmp_sum = false;
-					for (k = round(j - 0.01*fs); k <= (j - 0.01*fs); k++)
-						if(ovious_M.at(k))
-							tmp_sum = true;
-
-					if(tmp_sum)
-					{
-						position = (j+1)/(double)fs;
-						out->Add(position, t_dur, channel + 1, 0.5, ret[channel]->m_envelopeCdf.at(j), ret[channel]->m_envelopePdf.at(j));
-					}
-				}
-			}
-		}
-	}
-
-	// making M stack pointer of events
-	m = new wxVector<double>*[countChannels];
-	for (i = 0; i < countChannels; i++)
-		m[i] = new wxVector<double>(countRecords, 0.0);
-
-	for (i = 0; i < (int)out->m_pos.size(); i++)
-	{
-		tmp_start2 = out->m_pos.at(i) * fs;
-		tmp_stop = out->m_pos.at(i) * fs + discharge_tol * fs;
-		for (k = tmp_start2; k <= tmp_stop; k += 1)
-		{
-			tmp_round = round(k) - 1;
-			m[out->m_chan.at(i)-1]->at(tmp_round) = out->m_con.at(i);
-		}
-	}
-
-	// definition of multichannel events vectors
-	delete [] point;
-	point = new wxVector<int>[2];
-	for (i = 0; i < countRecords; i++)
-	{
-		tmp_act = 0;
-		for (j = 0; j < countChannels; j++)
-			if (m[j]->at(i) > 0)
-				tmp_act = 1;
-
-		if (tmp_old != tmp_act && tmp_act - tmp_old > 0)
-			point[0].push_back(i);
-		else if (tmp_old != tmp_act && tmp_act - tmp_old < 0)
-			point[1].push_back(i-1);
-
-		tmp_old = tmp_act;
-	}
-
-	// MV && MA && MW && MPDF && MD && MP
-	discharges = new CDischarges(countChannels);
-	for (i = 0; i < (int)point[0].size(); i++)
-	{
-		for (channel = 0; channel < countChannels; channel++)
-		{
-			if (ret[channel] == NULL) continue;
-
-			tmp_mv 	     = 0;
-			tmp_max_ma   = 0;
-			tmp_max_mw   = 0;
-			tmp_max_mpdf = 0;
-			tmp_mp  	 = NAN;
-			tmp_row 	 = 0;
-
-			for (j = point[0].at(i) - 1; j < point[1].at(i); j++)
-			{
-				// MV
-				if (m[channel]->at(j) > tmp_mv)
-				{
-					tmp_mv = m[channel]->at(j);
-					// MP
-					if (std::isnan(tmp_mp))
-						tmp_mp = ((double)tmp_row + point[0].at(i)+1) / (double)fs;
-				}
-
-				// MA
-				tmp_seg = ret[channel]->m_envelope.at(j) - (ret[channel]->m_prahInt[0].at(j) / (double)k1);
-				tmp_seg = std::fabs(tmp_seg);
-				if (tmp_seg > tmp_max_ma)
-					tmp_max_ma = tmp_seg;
-
-				// MW
-				tmp_seg = ret[channel]->m_envelopeCdf.at(j);
-				if (tmp_seg > tmp_max_mw)
-					tmp_max_mw = tmp_seg;
-
-				// MPDF
-				tmp_seg = ret[channel]->m_envelopePdf.at(j) * m[channel]->at(j);
-				if (tmp_seg > tmp_max_mpdf)
-				   tmp_max_mpdf = tmp_seg;
-
-			   tmp_row++;
-			}
-
-			discharges->m_MV[channel].push_back(tmp_mv);
-			discharges->m_MA[channel].push_back(tmp_max_ma);
-			discharges->m_MPDF[channel].push_back(tmp_max_mpdf);
-			discharges->m_MW[channel].push_back(tmp_max_mw);
-			discharges->m_MP[channel].push_back(tmp_mp);
-
-			// MD
-			tmp_md = (point[1].at(i) - point[0].at(i)) / (double)fs;
-			discharges->m_MD[channel].push_back(tmp_md);
-		}
-	}
-
-	for (i = 0; i < countChannels; i++)
-	{
-		if (ret[i] == NULL) continue;
-
-		delete ret[i];
-		delete m[i];
-	}
-
-	delete [] point;
-	delete [] m;
-	delete [] ret;
-}
-
-template<class T>
-vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop)
-{
-	if (decimationF >= fs)
-	{
-		vector<T>* output = new vector<T>[channelCount];
-
-		stepBuffer.resize(BLOCK_SIZE*channelCount);
-		for (int i = 0; i < channelCount; i++)
-			output[i].reserve(stop - start);
-
-		for (int i = start; i < stop; i += BLOCK_SIZE)
-		{
-			int end = min(stop, i + BLOCK_SIZE);
-			int len = end - i;
-
-			loader->readSignal(stepBuffer.data(), i, end - 1);
-
-			for (int j = 0; j < channelCount; j++)
-			{
-				for (int k = 0; k < len; k++)
-					output[j].push_back(stepBuffer[j*len + k]);
-			}
-		}
-
-		return output;
-	}
-
-	cl_int err;
-
-	int discard = filterProcessor->discardSamples();
-	int delay = filterProcessor->delaySamples();
-	int step = BLOCK_SIZE - discard;
-	int len = stop - start;
-	len = (len + step - 1)/step*step;
-
-	stepBuffer.resize((BLOCK_SIZE + 4)*channelCount);
-
-	segmentBuffer.resize(len*channelCount);
-	vector<T*> channelPointers(channelCount);
-	for (int i = 0; i < channelCount; i++)
-		channelPointers[i] = segmentBuffer.data() + i*len;
-
-	for (int i = 0; i < len; i += step)
-	{
-		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1 + 4);
-
-		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, (BLOCK_SIZE + 4)*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
-		checkClErrorCode(err, "clEnqueueWriteBuffer()");
-
-		filterProcessor->process(inBuffer, outBuffer, queue);
-
-		//OpenCLContext::printBuffer("spikedet_after_filter.txt", outBuffer, queue);
-
-		for (int j = 0; j < channelCount; j++)
-		{
-			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*(BLOCK_SIZE + 4) + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
-			checkClErrorCode(err, "clEnqueueReadBuffer()");
-
-			channelPointers[j] += step;
-		}
-	}
-
-	//OpenCLContext::printBuffer("spikedet_segment.txt", segmentBuffer.data(), len*channelCount);
-
-	err = clFinish(queue);
-	checkClErrorCode(err, "clFinish()");
-
-	// Create the output segment;
-	int D = fs/decimationF;
-	assert(D >= 1);
-	assert(D*decimationF == fs);
-
-	vector<T>* output = new vector<T>[channelCount];
-	for (int i = 0; i < channelCount; i++)
-	{
-		int size = (stop - start)/D;
-		output[i].resize(size);
-		T* channelPointer = segmentBuffer.data() + i*len;
-
-		for (int j = 0; j < size; j++)
-		{
-			output[i][j] = *channelPointer;
-			channelPointer += D;
-		}
-	}
-
-	return output;
-}
+// methods
+public:
+	/**
+	 * A constructor.
+	 * @param data input data
+	 * @param settings settings od the detector
+	 * @param fs sample rate
+	 * @param index indexs
+	 * @param channel number of channel
+	 */
+	COneChannelDetect(const wxVector<SIGNALTYPE>* data, const DETECTOR_SETTINGS* settings, const int& fs, const wxVector<int>* index, const int& channel);
+
+	/**
+	 * A virtual desctructor.
+	 */
+	virtual ~COneChannelDetect();
+
+	/**
+	 * This is the entry point of the thread.
+	 */
+	virtual ONECHANNELDETECTRET* Entry();
+
+private:
+	/**
+	 * Calculating a mean from data in vector.
+	 * @param data a vector of input data
+	 * @return a mean
+	 */
+	double mean(wxVector<double>& data);
+
+	/**
+	 * Calculating a variance from data in vector.
+	 * @param data input vector with data
+	 * @param mean mean of data in vector
+	 * @return a variance
+	 */
+	double variance(wxVector<double>& data, const double & mean);
+
+	/**
+	 * Detection of local maxima in envelope.
+	 * @param envelope envelope of input channel
+	 * @param prah_int threeshold curve
+	 * @param polyspike_union_time polyspike union time
+	 * @return vector cintaining markers of local maxima
+	 */
+	wxVector<bool>* localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time);
+
+	/**
+	 * Detecting of union and their merging.
+	 * @param marker1 markers of spikes
+	 * @param envelope envelope of input channel
+	 * @param union_samples union samples time
+	 */
+	void detectionUnion(wxVector<bool>* marker1, wxVector<SIGNALTYPE>& envelope, const double& union_samples);
+
+	/**
+	 * Finding of the highes maxima of the section with local maxima.
+	 * implement:
+	 * point(:,1)=find(diff([0;marker1])>0); % start
+	 * point(:,2)=find(diff([marker1;0])<0); % end
+	 * @param point
+	 * @param marker1
+	 */
+	void findStartEndCrossing(wxVector<int> point[2], const wxVector<bool>* marker1);
+
+// variables
+public:
+	/* none */
+
+private:
+	/// input data
+	const wxVector<SIGNALTYPE>* m_data;
+	/// settinggs of the detector
+	const DETECTOR_SETTINGS*    m_settings;
+	/// sample rate
+	const int 			  		m_fs;
+	/// indexs of suspects areas
+	const wxVector<int>* 		m_index;
+	/// channel number
+	const int 					m_channel;
+};
 
 // ------------------------------------------------------------------------------------------------
 // COneChannelDetect
@@ -2077,5 +1325,764 @@ void COneChannelDetect::findStartEndCrossing(wxVector<int> point[2], const wxVec
 	}
 }
 
+const int BLOCK_SIZE = 1024*16/*512*/;
+
+int nearestGreaterDivisor(int a, int b)
+{
+	for (int i = a; a < b; i++)
+	{
+		if (b%i == 0)
+			return i;
+	}
+	return b;
+}
+
+} // namespace
+
+namespace AlenkaSignal
+{
+
+/// A constructor.
+CDetectorOutput::CDetectorOutput()
+{
+	/* empty */
+}
+
+/// A virtual destructor.
+CDetectorOutput::~CDetectorOutput()
+{
+	/* empty */
+}
+
+
+/// Add data to the vectors.
+void CDetectorOutput::Add(const double& pos, const double& dur, const int& chan, const double& con, const double& weight, const double& pdf)
+{
+	m_pos.push_back(pos);
+	m_dur.push_back(dur);
+	m_chan.push_back(chan);
+	m_con.push_back(con);
+	m_weight.push_back(weight);
+	m_pdf.push_back(pdf);
+}
+
+///Erase records at positions.
+void CDetectorOutput::Remove(const wxVector<int>& pos)
+{
+	unsigned i, counter = 0;
+
+	for (i = 0; i < pos.size(); i++)
+	{
+		if (m_pos.size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+			continue;
+
+		m_pos.erase(m_pos.begin()+pos.at(i)-counter);
+		m_dur.erase(m_dur.begin()+pos.at(i)-counter);
+		m_chan.erase(m_chan.begin()+pos.at(i)-counter);
+		m_con.erase(m_con.begin()+pos.at(i)-counter);
+		m_weight.erase(m_weight.begin()+pos.at(i)-counter);
+		m_pdf.erase(m_pdf.begin()+pos.at(i)-counter);
+
+		counter++;
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+// CDischarges
+// ------------------------------------------------------------------------------------------------
+
+/// A constructor.
+CDischarges::CDischarges(const int& countChannels)
+{
+	m_countChannels = countChannels;
+
+	m_MV   = new std::vector<double>[countChannels];
+	m_MA   = new std::vector<double>[countChannels];
+	m_MP   = new std::vector<double>[countChannels];
+	m_MD   = new std::vector<double>[countChannels];
+	m_MW   = new std::vector<double>[countChannels];
+	m_MPDF = new std::vector<double>[countChannels];
+}
+
+/// A virual destructor.
+CDischarges::~CDischarges()
+{
+	delete [] m_MV;
+	delete [] m_MA;
+	delete [] m_MP;
+	delete [] m_MD;
+	delete [] m_MW;
+	delete [] m_MPDF;
+}
+
+/**
+ * Erase records.
+ * @param pos positions of records.
+ */
+void CDischarges::Remove(const wxVector<int>& pos)
+{
+	unsigned i, channel, counter = 0;
+
+	for (i = 0; i < pos.size(); i++)
+	{
+
+		for (channel = 0; channel < m_countChannels; channel++)
+		{
+			if (m_MV[channel].size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+				continue;
+
+			m_MV[channel].erase(m_MV[channel].begin()+pos.at(i)-counter);
+			m_MA[channel].erase(m_MA[channel].begin()+pos.at(i)-counter);
+			m_MP[channel].erase(m_MP[channel].begin()+pos.at(i)-counter);
+			m_MW[channel].erase(m_MW[channel].begin()+pos.at(i)-counter);
+			m_MPDF[channel].erase(m_MPDF[channel].begin()+pos.at(i)-counter);
+			m_MD[channel].erase(m_MD[channel].begin()+pos.at(i)-counter);
+		}
+		counter++;
+	}
+
+}
+
+template<class T>
+Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
+	fs(fs), channelCount(channelCount), settings(settings), context(context)
+{
+	decimationF = settings.m_decimation;
+	decimationF = nearestGreaterDivisor(min(fs, decimationF), fs);
+
+	if (decimationF >= fs)
+		return;
+
+	int M = fs + 1;
+	Filter<T> filter(M, fs);
+	//filter.notch(true);
+	//filter.highpass(true);
+	filter.lowpass(true);
+
+	//filter.setNotch(settings.m_main_hum_freq);
+	//filter.setHighpass(settings.m_band_low);
+	//filter.setLowpass(min(decimationF, settings.m_band_high));
+	filter.setLowpass(decimationF);
+
+	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context, WindowFunction::Hamming);
+	filterProcessor->changeSampleFilter(M, filter.computeSamples());
+
+#ifndef NDEBUG
+	//FILE* file = fopen("spikedet_coefficients.txt", "w");
+	//filter.printCoefficients(file, filterProcessor->getCoefficients());
+	//fclose(file);
+#endif
+
+	cl_int err;
+	cl_mem_flags flags = CL_MEM_READ_WRITE;
+
+	queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
+	checkClErrorCode(err, "clCreateCommandQueue");
+
+	inBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
+	checkClErrorCode(err, "clCreateBuffer");
+
+	outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
+	checkClErrorCode(err, "clCreateBuffer");
+}
+
+template<class T>
+Spikedet<T>::~Spikedet()
+{
+	delete filterProcessor;
+
+	cl_int err;
+
+	if (queue != nullptr)
+	{
+		err = clReleaseCommandQueue(queue);
+		checkClErrorCode(err, "clReleaseCommandQueue()");
+	}
+
+	if (inBuffer != nullptr)
+	{
+		err = clReleaseMemObject(inBuffer);
+		checkClErrorCode(err, "clReleaseMemObject()");
+	}
+	if (outBuffer != nullptr)
+	{
+		err = clReleaseMemObject(outBuffer);
+		checkClErrorCode(err, "clReleaseMemObject()");
+	}
+}
+
+template<class T>
+void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges)
+{
+	m_out = out;
+	m_discharges = discharges;
+	int 				  i, j, k, indexSize;
+	int64_t				  start, stop, tmp;
+	//wxVector<SIGNALTYPE>* segments = NULL;
+	wxVector<int64_t>         indexStart, indexStop; // TODO: Make sure all variables holding the sample index have 8 bytes like these ones.
+
+	BANDWIDTH 			  bandwidth(m_settings->m_band_low, m_settings->m_band_high);
+
+	CDetectorOutput*      subOut 		= NULL;
+	CDischarges*          subDischarges = NULL;
+
+	int 				  posSize, disSize, tmpFirst, tmpLast;
+	double 				  minMP, tmpShift;
+
+	wxVector<int>         removeOut;
+	wxVector<int>         removeDish;
+
+//	int 				  countSamples = m_model->GetCountSamples();
+//	int 				  countChannels = m_model->GetCountChannels();
+//	int 				  fs = m_model->GetFS();
+	int64_t				  countSamples = loader->sampleCount();
+	int 				  countChannels = loader->channelCount();
+
+	int    	  			  winsize  = m_settings->m_winsize * fs;
+
+	//wxThreadEvent         event(wxEVT_THREAD, DETECTOR_EVENT);
+	int 				  progressBy;
+
+	// verify buffering
+	tmp = countSamples / fs;
+	if (m_settings->m_buffering > tmp)
+		m_settings->m_buffering = tmp;
+
+	// Signal buffering
+	int64_t N_seg = floor(countSamples/(m_settings->m_buffering * fs));
+	if (N_seg < 1)
+		N_seg = 1;
+	int64_t T_seg = round((double)countSamples/(double)N_seg/fs);
+	// Indexs of segments with two-side overlap
+	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, fs, winsize);
+
+	progressBy = round(100/(float)indexStart.size());
+
+	// starting analysis on the segmented data
+	indexSize = indexStop.size();
+	assert(indexStart.size() == indexStop.size());
+	for (i = 0; i < indexSize; i ++)
+	{
+		start = indexStart.at(i);
+		stop = indexStop.at(i);
+
+//		if (TestDestroy())
+//		{
+//			std::cout << "cancel" << std::endl;
+//			break;
+//		}
+
+//		segments = m_model->GetSegment(start, stop);
+//		if (segments == NULL)
+//		{
+//			// error - end of file?
+//			break;
+//		}
+		spikeDetector(loader, start, stop, countChannels, fs, bandwidth, subOut, subDischarges);
+		//continue;
+		//delete [] segments;
+		//segments = NULL;
+
+		// send progress to main frame
+		//m_progress += progressBy;
+		//event.SetInt(m_progress);
+		//wxQueueEvent((wxEvtHandler*)m_frame, event.Clone());
+
+		// removing of two side overlap detections
+		posSize = subOut->m_pos.size();
+		disSize = subDischarges->m_MP[0].size();
+
+		if (i > 0)
+			tmpFirst = 1;
+		else tmpFirst = 0;
+
+		if (i < (int)indexStop.size()-1)
+			tmpLast = 1;
+		else tmpLast = 0;
+
+		if (posSize > 0)
+		{
+			if (indexStop.size() > 1)
+			{
+				for (j = 0; j < posSize; j++)
+				{
+					if (subOut->m_pos.at(j) < tmpFirst*3*m_settings->m_winsize ||
+						subOut->m_pos.at(j) > ((stop - start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
+							removeOut.push_back(j);
+				}
+				subOut->Remove(removeOut);
+
+				for (j = 0; j < disSize; j++)
+				{
+					minMP = INT_MAX;
+					for (k = 0; k < countChannels; k++)
+						if (subDischarges->m_MP[k].at(j) < minMP)
+								minMP = subDischarges->m_MP[k].at(j);
+
+					if (minMP < tmpFirst*3*m_settings->m_winsize ||
+						minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
+								removeDish.push_back(j);
+				}
+				subDischarges->Remove(removeDish);
+			}
+		}
+
+		posSize = subOut->m_pos.size();
+		disSize = subDischarges->m_MP[0].size();
+		tmpShift = (indexStart.at(i)+1)/(double)fs - 1/(double)fs;
+
+		// connect out
+		for (j = 0; j < posSize; j++)
+		{
+			m_out->Add(
+					subOut->m_pos.at(j) + tmpShift,
+					subOut->m_dur.at(j),
+					subOut->m_chan.at(j),
+					subOut->m_con.at(j),
+					subOut->m_weight.at(j),
+					subOut->m_pdf.at(j)
+				);
+		}
+
+		// connect discharges
+		for (j = 0; j < countChannels; j++)
+		{
+			for (k = 0; k < (int)subDischarges->m_MP[j].size(); k++)
+			{
+				subDischarges->m_MP[j].at(k) += tmpShift;
+			}
+		}
+
+		for (j = 0; j < countChannels; j++)
+		{
+			m_discharges->m_MV[j].insert(m_discharges->m_MV[j].end(), subDischarges->m_MV[j].begin(), subDischarges->m_MV[j].end());
+			m_discharges->m_MA[j].insert(m_discharges->m_MA[j].end(), subDischarges->m_MA[j].begin(), subDischarges->m_MA[j].end());
+			m_discharges->m_MP[j].insert(m_discharges->m_MP[j].end(), subDischarges->m_MP[j].begin(), subDischarges->m_MP[j].end());
+			m_discharges->m_MD[j].insert(m_discharges->m_MD[j].end(), subDischarges->m_MD[j].begin(), subDischarges->m_MD[j].end());
+			m_discharges->m_MW[j].insert(m_discharges->m_MW[j].end(), subDischarges->m_MW[j].begin(), subDischarges->m_MW[j].end());
+			m_discharges->m_MPDF[j].insert(m_discharges->m_MPDF[j].end(), subDischarges->m_MPDF[j].begin(), subDischarges->m_MPDF[j].end());
+		}
+
+		// clear
+		if (subOut)
+			delete subOut;
+		if (subDischarges)
+			delete subDischarges;
+		removeOut.clear();
+		removeDish.clear();
+	}
+}
+
+/// Calculate the starts and ends of indexes for @see #spikeDetector
+template<class T>
+void Spikedet<T>::getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize)
+{
+	int64_t start = 0, end;
+	int i, startSize;
+
+	while (start < cntElemInCh)
+	{
+		indexStart.push_back(start);
+		start += T_seg * fs;
+	}
+
+	startSize = indexStart.size();
+	if (indexStart.size() > 1)
+	{
+		for (i = 1; i < startSize; i++)
+			indexStart.at(i) -= 3*winsize;
+
+		for (i = 0; i < startSize; i++)
+		{
+			end = indexStart.at(i) + T_seg*fs + 2*(3*winsize);
+			indexStop.push_back(end);
+		}
+
+		indexStop.front() -= 3*winsize;
+		indexStop.back() = cntElemInCh;
+
+		if (indexStop.back() - indexStart.back() < T_seg * fs)
+		{
+			indexStart.pop_back();
+			//indexStart.pop_back(); // No idea what this shit was supposed to mean...
+			//indexStop.back() = cntElemInCh;
+			auto tmp = indexStop.back();
+			indexStop.pop_back();
+			indexStop.back() = tmp;
+		}
+	}
+	else
+	{
+		indexStop.push_back(cntElemInCh);
+	}
+}
+
+/// Spike detector
+template<class T>
+void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
+									CDetectorOutput*& out, CDischarges*& discharges)
+{
+	double 				  k1 = m_settings->m_k1;
+	double 				  k2 = m_settings->m_k2;
+	double 				  discharge_tol = m_settings->m_discharge_tol;
+	int 				  decimation = /*m_settings->m_decimation*/decimationF;
+	int                   fs = inputFS;
+
+	int    		  		  countRecords = stopSample - startSample;
+	wxVector<int> 		  index;
+	int 		  		  stop, step;
+	int	  	        	  i, j;
+	float 				  k;
+	int 				  tmp_start;
+	COneChannelDetect**   threads;
+	ONECHANNELDETECTRET** ret;
+
+	int    	  			  winsize  = m_settings->m_winsize * fs;
+	double 	  			  noverlap = m_settings->m_noverlap * fs;
+
+	// OUT
+	double 				  t_dur = 0.005;
+	wxVector<bool> 		  ovious_M(countRecords, false);
+	double 				  position;
+	bool 				  tmp_sum = false;
+
+	wxVector<double>** 	  m;
+	int 				  tmp_round;
+	float 				  tmp_start2, tmp_stop;
+
+	// definition of multichannel events vectors
+	wxVector<int>* 		  point = /*new wxVector<int>[2]*/nullptr; // Why the fuck is this here?
+	int 				  tmp_old = 0;
+	int 				  tmp_act = 0;
+	int 				  channel;
+
+	// MV && MA && MW && MPDF && MD && MP
+	double 				  tmp_seg;
+	double   			  tmp_mv;
+	double 				  tmp_max_ma;
+	double 				  tmp_max_mw;
+	double 				  tmp_max_mpdf;
+	double 				  tmp_md;
+	double 				  tmp_mp;
+	int    				  tmp_row;
+
+	wxVector<T>* data = prepareSegment(loader, startSample, stopSample);
+
+	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
+	if (fs > decimation)
+	{
+		//CDSP::Resample(data, countChannels, fs, decimation);
+
+		fs = decimation;
+		winsize  = m_settings->m_winsize * fs;
+		noverlap = m_settings->m_noverlap * fs;
+		countRecords = data[0].size();
+	}
+
+	// Segmentation index
+	stop = countRecords - winsize + 1;
+
+	if (noverlap < 1)
+		step = round(winsize * (1 - noverlap));
+	else
+		step = winsize - noverlap;
+
+	for (i = 0; i < stop; i += step)
+		index.push_back(i);
+
+	// FILTERING
+	// filtering Nx50Hz
+	CDSP::Filt50Hz(data, countChannels, fs, m_settings->m_main_hum_freq, bandwidth);
+
+	// filtering 10-60Hz
+	CDSP::Filtering(data, countChannels, fs, bandwidth);
+
+	// local maxima detection
+	ret = new ONECHANNELDETECTRET*[countChannels];
+	threads = new COneChannelDetect*[countChannels];
+	for (i = 0; i < countChannels; i++)
+	{
+		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
+		//threads[i]->Run();
+		ret[i] = threads[i]->Entry();
+	}
+
+	for (i = 0; i < countChannels; i++)
+	{
+		//ret[i] = (ONECHANNELDETECTRET*)threads[i]->Wait();
+		delete threads[i];
+	}
+
+	delete[] data;
+	//return;
+
+	delete [] threads;
+	// processing detection results
+	for (i = 0; i < countChannels; i++)
+	{
+		if (ret[i] == NULL)
+			continue;
+
+		//% first and last second is not analyzed (filter time response etc.)
+		// first section
+		for (j = 0; j < fs; j++)
+		{
+			ret[i]->m_markersHigh->at(j) = false;
+			ret[i]->m_markersLow->at(j) = false;
+		}
+		// last section
+		tmp_start = ret[i]->m_markersHigh->size() - fs - 1;
+		for (j = tmp_start; j < (int)ret[i]->m_markersHigh->size(); j++)
+		{
+			ret[i]->m_markersHigh->at(j) = false;
+			ret[i]->m_markersLow->at(j) = false;
+		}
+	}
+
+	// OUT
+	out = new CDetectorOutput();
+	for (channel = 0; channel < countChannels; channel++)
+	{
+		for (j = 0; j < countRecords; j++)
+		{
+			if (ret[channel] == NULL)
+				continue;
+
+			if (ret[channel]->m_markersHigh->at(j) == true)
+			{
+				ovious_M.at(j) = true;
+				position = (j+1)/(double)fs;
+
+				out->Add(position, t_dur, channel + 1, 1, ret[channel]->m_envelopeCdf.at(j), ret[channel]->m_envelopePdf.at(j));
+			}
+		}
+	}
+
+	// ambiguous spike events output
+	if (k1 != k2)
+	{
+		for (channel = 0; channel < countChannels; channel++)
+		{
+			if (ret[channel] == NULL)
+				continue;
+
+			for (j = 0; j < countRecords; j++)
+			{
+				if (ret[channel]->m_markersLow->at(j) == true)
+				{
+					if (ret[channel]->m_markersHigh->at(j) == true)
+						continue;
+
+					tmp_sum = false;
+					for (k = round(j - 0.01*fs); k <= (j - 0.01*fs); k++)
+						if(ovious_M.at(k))
+							tmp_sum = true;
+
+					if(tmp_sum)
+					{
+						position = (j+1)/(double)fs;
+						out->Add(position, t_dur, channel + 1, 0.5, ret[channel]->m_envelopeCdf.at(j), ret[channel]->m_envelopePdf.at(j));
+					}
+				}
+			}
+		}
+	}
+
+	// making M stack pointer of events
+	m = new wxVector<double>*[countChannels];
+	for (i = 0; i < countChannels; i++)
+		m[i] = new wxVector<double>(countRecords, 0.0);
+
+	for (i = 0; i < (int)out->m_pos.size(); i++)
+	{
+		tmp_start2 = out->m_pos.at(i) * fs;
+		tmp_stop = out->m_pos.at(i) * fs + discharge_tol * fs;
+		for (k = tmp_start2; k <= tmp_stop; k += 1)
+		{
+			tmp_round = round(k) - 1;
+			m[out->m_chan.at(i)-1]->at(tmp_round) = out->m_con.at(i);
+		}
+	}
+
+	// definition of multichannel events vectors
+	delete [] point; // TODO: remove this
+	point = new wxVector<int>[2];
+	for (i = 0; i < countRecords; i++)
+	{
+		tmp_act = 0;
+		for (j = 0; j < countChannels; j++)
+			if (m[j]->at(i) > 0)
+				tmp_act = 1;
+
+		if (tmp_old != tmp_act && tmp_act - tmp_old > 0)
+			point[0].push_back(i);
+		else if (tmp_old != tmp_act && tmp_act - tmp_old < 0)
+			point[1].push_back(i-1);
+
+		tmp_old = tmp_act;
+	}
+
+	// MV && MA && MW && MPDF && MD && MP
+	discharges = new CDischarges(countChannels);
+	for (i = 0; i < (int)point[0].size(); i++)
+	{
+		for (channel = 0; channel < countChannels; channel++)
+		{
+			if (ret[channel] == NULL) continue;
+
+			tmp_mv 	     = 0;
+			tmp_max_ma   = 0;
+			tmp_max_mw   = 0;
+			tmp_max_mpdf = 0;
+			tmp_mp  	 = NAN;
+			tmp_row 	 = 0;
+
+			for (j = point[0].at(i) - 1; j < point[1].at(i); j++)
+			{
+				// MV
+				if (m[channel]->at(j) > tmp_mv)
+				{
+					tmp_mv = m[channel]->at(j);
+					// MP
+					if (std::isnan(tmp_mp))
+						tmp_mp = ((double)tmp_row + point[0].at(i)+1) / (double)fs;
+				}
+
+				// MA
+				tmp_seg = ret[channel]->m_envelope.at(j) - (ret[channel]->m_prahInt[0].at(j) / (double)k1);
+				tmp_seg = std::fabs(tmp_seg);
+				if (tmp_seg > tmp_max_ma)
+					tmp_max_ma = tmp_seg;
+
+				// MW
+				tmp_seg = ret[channel]->m_envelopeCdf.at(j);
+				if (tmp_seg > tmp_max_mw)
+					tmp_max_mw = tmp_seg;
+
+				// MPDF
+				tmp_seg = ret[channel]->m_envelopePdf.at(j) * m[channel]->at(j);
+				if (tmp_seg > tmp_max_mpdf)
+				   tmp_max_mpdf = tmp_seg;
+
+			   tmp_row++;
+			}
+
+			discharges->m_MV[channel].push_back(tmp_mv);
+			discharges->m_MA[channel].push_back(tmp_max_ma);
+			discharges->m_MPDF[channel].push_back(tmp_max_mpdf);
+			discharges->m_MW[channel].push_back(tmp_max_mw);
+			discharges->m_MP[channel].push_back(tmp_mp);
+
+			// MD
+			tmp_md = (point[1].at(i) - point[0].at(i)) / (double)fs;
+			discharges->m_MD[channel].push_back(tmp_md);
+		}
+	}
+
+	for (i = 0; i < countChannels; i++)
+	{
+		if (ret[i] == NULL) continue;
+
+		delete ret[i];
+		delete m[i];
+	}
+
+	delete [] point;
+	delete [] m;
+	delete [] ret;
+}
+
+template<class T>
+vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop)
+{
+	if (decimationF >= fs)
+	{
+		vector<T>* output = new vector<T>[channelCount];
+
+		stepBuffer.resize(BLOCK_SIZE*channelCount);
+		for (int i = 0; i < channelCount; i++)
+			output[i].reserve(stop - start);
+
+		for (int i = start; i < stop; i += BLOCK_SIZE)
+		{
+			int end = min(stop, i + BLOCK_SIZE);
+			int len = end - i;
+
+			loader->readSignal(stepBuffer.data(), i, end - 1);
+
+			for (int j = 0; j < channelCount; j++)
+			{
+				for (int k = 0; k < len; k++)
+					output[j].push_back(stepBuffer[j*len + k]);
+			}
+		}
+
+		return output;
+	}
+
+	cl_int err;
+
+	int discard = filterProcessor->discardSamples();
+	int delay = filterProcessor->delaySamples();
+	int step = BLOCK_SIZE - discard;
+	int len = stop - start;
+	len = (len + step - 1)/step*step;
+
+	stepBuffer.resize((BLOCK_SIZE + 4)*channelCount);
+
+	segmentBuffer.resize(len*channelCount);
+	vector<T*> channelPointers(channelCount);
+	for (int i = 0; i < channelCount; i++)
+		channelPointers[i] = segmentBuffer.data() + i*len;
+
+	for (int i = 0; i < len; i += step)
+	{
+		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1 + 4);
+
+		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, (BLOCK_SIZE + 4)*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
+		checkClErrorCode(err, "clEnqueueWriteBuffer()");
+
+		filterProcessor->process(inBuffer, outBuffer, queue);
+
+		//OpenCLContext::printBuffer("spikedet_after_filter.txt", outBuffer, queue);
+
+		for (int j = 0; j < channelCount; j++)
+		{
+			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*(BLOCK_SIZE + 4) + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
+			checkClErrorCode(err, "clEnqueueReadBuffer()");
+
+			channelPointers[j] += step;
+		}
+	}
+
+	//OpenCLContext::printBuffer("spikedet_segment.txt", segmentBuffer.data(), len*channelCount);
+
+	err = clFinish(queue);
+	checkClErrorCode(err, "clFinish()");
+
+	// Create the output segment;
+	int D = fs/decimationF;
+	assert(D >= 1);
+	assert(D*decimationF == fs);
+
+	vector<T>* output = new vector<T>[channelCount];
+	for (int i = 0; i < channelCount; i++)
+	{
+		int size = (stop - start)/D;
+		output[i].resize(size);
+		T* channelPointer = segmentBuffer.data() + i*len;
+
+		for (int j = 0; j < size; j++)
+		{
+			output[i][j] = *channelPointer;
+			channelPointer += D;
+		}
+	}
+
+	return output;
+}
+
 template class Spikedet<float>;
-//template class Spikedet<double>;
+//template class Spikedet<double>; // TODO: try it with doubles
+
+} // namespace AlenkaSignal

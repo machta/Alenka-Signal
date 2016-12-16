@@ -1,12 +1,15 @@
-#ifndef MONTAGEPROCESSOR_H
-#define MONTAGEPROCESSOR_H
-
-#include "montage.h"
-#include "openclprogram.h"
+#ifndef ALENKASIGNAL_MONTAGEPROCESSOR_H
+#define ALENKASIGNAL_MONTAGEPROCESSOR_H
 
 #include <CL/cl_gl.h>
 
 #include <vector>
+
+namespace AlenkaSignal
+{
+
+template <class T>
+class Montage;
 
 /**
  * @brief This class handles computation of montages.
@@ -27,32 +30,13 @@ public:
 	 */
 	void process(const std::vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue);
 	
-	/**
-	 * @brief Returns the number of tracks of the montage. 
-	 */
-	unsigned int getNumberOfRows() const // TODO: remove if not used
-	{
-		return numberOfRows;
-	}
-
 private:
 	cl_int inputRowLength;
 	cl_int inputRowOffset;
 	cl_int outputRowLength;
 	cl_int channelsInFile;
-	cl_kernel montageKernel = nullptr;
-	unsigned int numberOfRows;
-
-	void releaseMontage()
-	{
-		cl_int err;
-
-		if (montageKernel != nullptr)
-		{
-			err = clReleaseKernel(montageKernel);
-			checkClErrorCode(err, "clReleaseKernel()");
-		}
-	}
 };
 
-#endif // MONTAGEPROCESSOR_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_MONTAGEPROCESSOR_H

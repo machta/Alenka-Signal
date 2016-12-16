@@ -1,6 +1,12 @@
-#include "montageprocessor.h"
+#include <AlenkaSignal/montageprocessor.h>
+
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/montage.h>
 
 using namespace std;
+
+namespace AlenkaSignal
+{
 
 template<class T>
 MontageProcessor<T>::MontageProcessor(unsigned int offset, unsigned int blockLength, int channelsInFile) :
@@ -14,7 +20,7 @@ MontageProcessor<T>::~MontageProcessor()
 }
 
 template<class T>
-void MontageProcessor<T>::process(const std::vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
+void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
 {
 	cl_int err;
 
@@ -53,3 +59,5 @@ void MontageProcessor<T>::process(const std::vector<Montage<T>*>& montage, cl_me
 
 template class MontageProcessor<float>;
 template class MontageProcessor<double>;
+
+} // namespace AlenkaSignal

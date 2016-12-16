@@ -1,4 +1,6 @@
-#include "montage.h"
+#include <AlenkaSignal/montage.h>
+
+#include <AlenkaSignal/openclcontext.h>
 
 using namespace std;
 
@@ -41,6 +43,9 @@ float in(int i, PARA)
 }
 
 } // namespace
+
+namespace AlenkaSignal
+{
 
 template<class T>
 Montage<T>::Montage(const string& source, OpenCLContext* context, const string& headerSource) :
@@ -86,3 +91,5 @@ bool Montage<T>::test(const std::string& source, OpenCLContext* context, string*
 
 template class Montage<float>;
 template class Montage<double>;
+
+} // namespace AlenkaSignal

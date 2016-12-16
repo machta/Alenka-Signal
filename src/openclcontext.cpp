@@ -1,4 +1,4 @@
-#include "openclcontext.h"
+#include <AlenkaSignal/openclcontext.h>
 
 #include <algorithm>
 #include <cassert>
@@ -128,6 +128,9 @@ string clfftErrorCodeToString(clfftStatus code)
 #undef CASE
 
 } // namespace
+
+namespace AlenkaSignal
+{
 
 OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext)
 {
@@ -527,3 +530,5 @@ void OpenCLContext::printBufferDouble(const string& filePath, cl_mem buffer, cl_
 	(void)queue;
 #endif
 }
+
+} // namespace AlenkaSignal

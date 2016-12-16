@@ -1,6 +1,8 @@
-#include "filterprocessor.h"
+#include <AlenkaSignal/filterprocessor.h>
 
-#include "fasttransforms.h"
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/openclprogram.h>
+#include <fasttransforms.h>
 
 #include <cmath>
 #include <complex>
@@ -30,6 +32,9 @@ T blackmanWindow(int n, int M)
 }
 
 } // namespace
+
+namespace AlenkaSignal
+{
 
 template<class T>
 FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context, WindowFunction windowFunction)
@@ -282,3 +287,5 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 
 template class FilterProcessor<float>;
 template class FilterProcessor<double>;
+
+} // namespace AlenkaSignal

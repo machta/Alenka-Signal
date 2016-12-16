@@ -1,8 +1,11 @@
-#include "filter.h"
+#include <AlenkaSignal/filter.h>
 
 #include <complex>
 
 using namespace std;
+
+namespace AlenkaSignal
+{
 
 template<class T>
 vector<T> Filter<T>::computeSamples()
@@ -54,3 +57,5 @@ void Filter<T>::printCoefficients(FILE* file, const vector<T>& coefficients)
 
 template class Filter<float>;
 template class Filter<double>;
+
+} // namespace AlenkaSignal

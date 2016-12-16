@@ -1,10 +1,13 @@
 #include "gtest/gtest.h"
 
-#include "montageprocessor.h"
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/montage.h>
+#include <AlenkaSignal/montageprocessor.h>
 
 #include <functional>
 
 using namespace std;
+using namespace AlenkaSignal;
 
 namespace
 {

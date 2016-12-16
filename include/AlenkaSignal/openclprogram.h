@@ -1,11 +1,16 @@
-#ifndef OPENCLPROGRAM_H
-#define OPENCLPROGRAM_H
+#ifndef ALENKASIGNAL_OPENCLPROGRAM_H
+#define ALENKASIGNAL_OPENCLPROGRAM_H
 
-#include "openclcontext.h"
+#include <CL/cl_gl.h>
 
 #include <cstdio>
 #include <string>
 #include <stdexcept>
+
+namespace AlenkaSignal
+{
+
+class OpenCLContext;
 
 /**
  * @brief A wrapper for cl_program.
@@ -27,20 +32,7 @@ public:
 	 * The returned kernel object is independent of this class and the caller
 	 * takes its ownership.
 	 */
-	cl_kernel createKernel(const std::string& kernelName)
-	{
-		if (compilationSuccessful() == false)
-		{
-			throw std::runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");
-		}
-
-		cl_int err;
-
-		cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err);
-		checkClErrorCode(err, "clCreateKernel()");
-
-		return kernel;
-	}
+	cl_kernel createKernel(const std::string& kernelName);
 
 	/**
 	 * @brief Returns cl_program compilation status.
@@ -63,4 +55,6 @@ private:
 	OpenCLContext* context;
 };
 
-#endif // OPENCLPROGRAM_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_OPENCLPROGRAM_H

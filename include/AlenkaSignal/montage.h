@@ -1,13 +1,15 @@
-#ifndef MONTAGE_H
-#define MONTAGE_H
+#ifndef ALENKASIGNAL_MONTAGE_H
+#define ALENKASIGNAL_MONTAGE_H
 
-#include "openclcontext.h"
-#include "openclprogram.h"
+#include <AlenkaSignal/openclprogram.h>
 
 #include <CL/cl_gl.h>
 
 #include <vector>
 #include <string>
+
+namespace AlenkaSignal
+{
 
 // TODO: prohibit copying of this object
 
@@ -61,4 +63,6 @@ private:
 	cl_kernel kernel = nullptr;
 };
 
-#endif // MONTAGE_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_MONTAGE_H

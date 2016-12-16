@@ -1,11 +1,15 @@
 #include "gtest/gtest.h"
 
-#include "spikedet.h"
-#include "edf.h"
+#include <AlenkaSignal/openclcontext.h>
+#include <AlenkaSignal/spikedet.h>
+#include <Alenka-File/edf.h>
 
 #include <functional>
+#include <memory>
 
 using namespace std;
+using namespace AlenkaSignal;
+using namespace AlenkaFile;
 
 namespace
 {
@@ -16,14 +20,10 @@ class Loader : public SpikedetDataLoader<T>
 public:
 	DataFile* file;
 
-	Loader(const string& filePath)
-	{
-		file = new EDF(filePath);
-	}
+	Loader(DataFile* file) : file(file)
+	{}
 	virtual ~Loader() override
-	{
-		delete file;
-	}
+	{}
 
 	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) override
 	{
@@ -40,7 +40,7 @@ public:
 };
 
 template<class T>
-void test(const string& file, DETECTOR_SETTINGS settings)
+void test(DataFile* file, DETECTOR_SETTINGS settings)
 {
 	clfftStatus errFFT;
 	clfftSetupData setupData;
@@ -104,36 +104,50 @@ protected:
 
 TEST_F(spikedet_test, IED_P001_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P001.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P002_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P002.edf", defaultSettings); }));
-	//test<float>(path + "IED_P002.edf", defaultSettings);
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P003_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P003.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P004_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P004.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P005_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P005.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P006_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P006.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P007_default_float)
 {
-	EXPECT_NO_THROW(printException([this] () { test<float>(path + "IED_P007.edf", defaultSettings); }));
+	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+}
+
+// TODO: make double version of the above tests
+
+TEST_F(spikedet_test, bug)
+{
+	unique_ptr<DataFile> file(new EDF(path + "edfsample.edf"));
+	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
 }

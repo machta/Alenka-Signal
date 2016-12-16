@@ -1,15 +1,23 @@
-#ifndef SPIKEDET_H
-#define SPIKEDET_H
+#ifndef ALENKASIGNAL_SPIKEDET_H
+#define ALENKASIGNAL_SPIKEDET_H
 
-#include "filterprocessor.h"
+#include <CL/cl_gl.h>
 
 #include <cstdio>
 #include <cmath>
 #include <vector>
+//#include <cstdint>
 
 #define wxVector std::vector
 
 #define SIGNALTYPE float
+
+namespace AlenkaSignal
+{
+
+class OpenCLContext;
+template <class T>
+class FilterProcessor;
 
 template<class T>
 class SpikedetDataLoader
@@ -24,7 +32,6 @@ public:
 
 typedef struct bandwidth
 {
-public:
 	/**
 	 * A constructor
 	 * @param bl lower limit filtering
@@ -48,7 +55,6 @@ public:
  */
 class CDetectorOutput
 {
-// methods
 public:
 	/**
 	 * A constructor.
@@ -75,11 +81,8 @@ public:
 	 * Erase records at positions.
 	 * @param pos position of records to erase.
 	 */
-	 void Remove(const wxVector<int>& pos);
-private:
+	void Remove(const wxVector<int>& pos);
 
-// variables
-public:
 	/// spike position (second)
 	wxVector<double>  m_pos;
 	/// channel
@@ -92,8 +95,6 @@ public:
 	wxVector<double>  m_weight;
 	/// statistical significance "PDF"
 	wxVector<double>  m_pdf;
-private:
-	/* none */
 };
 
 /**
@@ -101,7 +102,6 @@ private:
  */
 class CDischarges
 {
-// methods
 public:
 	/**
 	 * A constructor.
@@ -118,20 +118,17 @@ public:
 	 * Erase records at positions.
 	 * @param pos positions of record to erase.
 	 */
-	 void Remove(const wxVector<int>& pos);
+	void Remove(const wxVector<int>& pos);
 
-	 /**
-	  *	Return count channels.
-	  * @return count channels.s
-	  */
+	/**
+	 *	Return count channels.
+	 * @return count channels.s
+	 */
 	inline unsigned GetCountChannels() const
 	{
 		return m_countChannels;
 	}
-private:
 
-// variables
-public:
 	/// spike type 1-obvious, 0.5- ambiguous
 	std::vector<double>* m_MV;
 	/// max. amplitude of envelope above backround
@@ -144,42 +141,14 @@ public:
 	std::vector<double>* m_MW;
 	/// probability of occurence
 	std::vector<double>* m_MPDF;
+
 private:
 	/// count channels
 	unsigned 			 m_countChannels;
 };
 
-/*struct DETECTOR_SETTINGS
+typedef struct detectorSettings
 {
-	int    band_low = 10;          // -fl
-	int    band_high = 60;         // -fh
-	double k1 = 3.65;              // -k1
-	double k2 = -1000;             // -k2
-	double k3 = 0;                 // -k3
-	int    winsize = -1000;        // -w
-	double noverlap = -1000;       // -n
-	int    buffering = 300;        // -buf
-	int    main_hum_freq = 50;     // -h
-	double discharge_tol;          // -dt
-	double polyspike_union_time;   // -pt
-	int    decimation = 200;       // -dec
-};*/
-
-typedef struct detectorSettings {
-public:
-	/*int    m_band_low;                // (-fl)
-	int    m_band_high;               // (-fh)
-	double m_k1;               		  // (-k1)
-	double m_k2;               		  // (-k2)
-	double m_k3;					  // (-k3)
-	int    m_winsize;     			  // (-w)
-	double m_noverlap;     			  // (-n)
-	int    m_buffering;               // (-buf)
-	int    m_main_hum_freq;           // (-h)
-	double m_discharge_tol;           // (-dt)
-	double m_polyspike_union_time ;	  // (-pt)
-	int    m_decimation;*/
-
 	int    m_band_low = 10;                // -fl
 	int    m_band_high = 60;               // -fh
 	double m_k1 = 3.65;                    // -k1
@@ -228,7 +197,7 @@ private:
 	/// output object - strucutre discharges
 	CDischarges*       m_discharges;
 
-	void getIndexStartStop(wxVector<int>& indexStart, wxVector<int>& indexStop, const int& cntElemInCh, const double& T_seg, const int& fs, const int& winsize);
+	void getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize);
 
 	void spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
 	                   CDetectorOutput*& out, CDischarges*& discharges);
@@ -241,4 +210,6 @@ private:
 	std::vector<T> segmentBuffer, stepBuffer;
 };
 
-#endif // SPIKEDET_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_SPIKEDET_H

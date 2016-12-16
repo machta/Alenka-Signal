@@ -1,9 +1,12 @@
-#ifndef FILTER_H
-#define FILTER_H
+#ifndef ALENKASIGNAL_FILTER_H
+#define ALENKASIGNAL_FILTER_H
 
 #include <cmath>
 #include <vector>
 #include <cstdio>
+
+namespace AlenkaSignal
+{
 
 /**
  * @brief A class for computing FIR filter coefficients.
@@ -111,4 +114,6 @@ private:
 	}
 };
 
-#endif // FILTER_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_FILTER_H

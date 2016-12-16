@@ -4,8 +4,8 @@
  * @file
  */
 
-#ifndef OPENCLCONTEXT_H
-#define OPENCLCONTEXT_H
+#ifndef ALENKASIGNAL_OPENCLCONTEXT_H
+#define ALENKASIGNAL_OPENCLCONTEXT_H
 
 #include <CL/cl_gl.h>
 #include <clFFT.h>
@@ -17,13 +17,16 @@
  * @brief Simplified error code test for OpenCL functions.
  * @param val_ The error code.
  */
-#define checkClErrorCode(val_, message_) if((val_) != CL_SUCCESS) { std::stringstream ss; ss << message_; OpenCLContext::CCEC(val_, ss.str(), __FILE__, __LINE__); }
+#define checkClErrorCode(val_, message_) if((val_) != CL_SUCCESS) { std::stringstream ss; ss << message_; AlenkaSignal::OpenCLContext::CCEC(val_, ss.str(), __FILE__, __LINE__); }
 
 /**
  * @brief Simplified error code test for clFFT functions
  * @param val_ The error code.
  */
-#define checkClfftErrorCode(val_, message_) if((val_) != CLFFT_SUCCESS) { std::stringstream ss; ss << message_; OpenCLContext::CFCEC(val_, ss.str(), __FILE__, __LINE__); }
+#define checkClfftErrorCode(val_, message_) if((val_) != CLFFT_SUCCESS) { std::stringstream ss; ss << message_; AlenkaSignal::OpenCLContext::CFCEC(val_, ss.str(), __FILE__, __LINE__); }
+
+namespace AlenkaSignal
+{
 
 /**
  * @brief A wrapper for cl_context.
@@ -145,4 +148,6 @@ private:
 	cl_device_id deviceId;
 };
 
-#endif // OPENCLCONTEXT_H
+} // namespace AlenkaSignal
+
+#endif // ALENKASIGNAL_OPENCLCONTEXT_H
