@@ -1487,6 +1487,9 @@ Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, Open
 
 	outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
+
+	progressCurrent = 0;
+	cancelComputation = false;
 }
 
 template<class T>
@@ -1539,12 +1542,11 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 //	int 				  countChannels = m_model->GetCountChannels();
 //	int 				  fs = m_model->GetFS();
 	int64_t				  countSamples = loader->sampleCount();
-	int 				  countChannels = loader->channelCount();
+	int 				  countChannels = loader->channelCount(); // TODO: unite this with channelCount
 
 	int    	  			  winsize  = m_settings->m_winsize * fs;
 
 	//wxThreadEvent         event(wxEVT_THREAD, DETECTOR_EVENT);
-	int 				  progressBy;
 
 	// verify buffering
 	tmp = countSamples / fs;
@@ -1556,14 +1558,17 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 	if (N_seg < 1)
 		N_seg = 1;
 	int64_t T_seg = round((double)countSamples/(double)N_seg/fs);
-	// Indexs of segments with two-side overlap
-	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, fs, winsize);
 
-	progressBy = round(100/(float)indexStart.size());
+	// Indices of segments with two-side overlap
+	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, fs, winsize);
+	assert(indexStart.size() == indexStop.size());
+	indexSize = indexStop.size();
+
+	cancelComputation = false;
+	progressCurrent = 0;
+	progressComplete = indexSize*channelCount;
 
 	// starting analysis on the segmented data
-	indexSize = indexStop.size();
-	assert(indexStart.size() == indexStop.size());
 	for (i = 0; i < indexSize; i ++)
 	{
 		start = indexStart.at(i);
@@ -1574,6 +1579,10 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 //			std::cout << "cancel" << std::endl;
 //			break;
 //		}
+		if (cancelComputation)
+		{
+			break;
+		}
 
 //		segments = m_model->GetSegment(start, stop);
 //		if (segments == NULL)
@@ -1808,6 +1817,8 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
 		//threads[i]->Run();
 		ret[i] = threads[i]->Entry();
+
+		progressCurrent++;
 	}
 
 	for (i = 0; i < countChannels; i++)

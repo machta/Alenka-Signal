@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
-//#include <cstdint>
+#include <atomic>
 
 #define wxVector std::vector
 
@@ -186,6 +186,28 @@ public:
 
 	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges);
 
+	/**
+	 * @brief progressPercentage is used to query the completion status of the analysis.
+	 *
+	 * This method is thread safe. It can be called from a thread other than the one
+	 * that launched the detector via runAnalysis.
+	 * @return Returns the percentage towards completion of the operation.
+	 */
+	int progressPercentage() const
+	{
+		return 100*progressCurrent/progressComplete;
+	}
+
+	/**
+	 * @brief Use cancel to tell the detector to quit the computation at the earliest oppurtunity.
+	 *
+	 * Thread safe.
+	 */
+	void cancel()
+	{
+		cancelComputation = true;
+	}
+
 private:
 	int fs;
 	int channelCount;
@@ -208,6 +230,9 @@ private:
 	cl_command_queue queue = nullptr;
 	cl_mem inBuffer = nullptr, outBuffer = nullptr;
 	std::vector<T> segmentBuffer, stepBuffer;
+	int progressComplete;
+	std::atomic<int> progressCurrent;
+	std::atomic<bool> cancelComputation;
 };
 
 } // namespace AlenkaSignal
