@@ -678,7 +678,10 @@ public:
 	/// A destructor
 	~oneChannelDetectRet()
 	{
-		/* empty */
+		// These thwo vectors were allocated in localMaximaDetection(). Sometimes they point to the same vector.
+		delete m_markersHigh;
+		if (m_markersHigh != m_markersLow)
+			delete m_markersLow;
 	}
 
 } ONECHANNELDETECTRET;
@@ -1032,7 +1035,7 @@ double COneChannelDetect::variance(wxVector<double>& data, const double & mean)
 wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time)
 {
 	unsigned int         size = envelope.size();
-	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0); // Possible leak.
+	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0); // This leak was fixed in ~oneChannelDetectRet().
 	wxVector<int>   	 point[2];
 	wxVector<SIGNALTYPE> seg, seg_s;
 	wxVector<int>        tmp_diff_vector;
