@@ -183,7 +183,7 @@ void filter(vector<T> B, vector<T> A, const vector<T> &X, vector<T> &Y, vector<T
 #undef M
 #undef V
 
-const double PId = M_PIl;
+const double PId = M_PI;
 
 enum FILTERTYPE
 {

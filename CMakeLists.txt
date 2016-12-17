@@ -6,7 +6,7 @@ option(BUILD_TESTS_ALENKA_SIGNAL "Builds unit tests for Alenka-Signal." OFF)
 option(USE_CL_1_2 "Use OpenCL 1.2" ON)
 option(BUILD_CLFFT "Should a local build of clFFT library be used." OFF)
 set(CMAKE_CXX_STANDARD 11)
-set(BUILD_SHARED_LIBS false)
+set(BUILD_SHARED_LIBS off CACHE BOOL "")
 
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
 
@@ -25,12 +25,10 @@ find_package(OpenCL REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # First build all the library dependencies.
-if(BUILD_CLFFT)
-	set(BUILD_LOADLIBRARIES false)
-	set(BUILD_EXAMPLES false)
-	add_subdirectory(clFFT/src)
-	include_directories(clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
-endif()
+set(BUILD_LOADLIBRARIES false)
+set(BUILD_EXAMPLES false)
+add_subdirectory(clFFT/src)
+include_directories(clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
 
 # If you want to use this library, you need to link to these libraries.
 set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
@@ -55,12 +53,14 @@ add_library(alenka-signal ${SRC})
 
 # Install rule.
 if(BUILD_CLFFT)
-	set(LIBS $<TARGET_FILE:clFFT>)
+	add_custom_target(install-alenka-signal
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:clFFT> $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/clFFT/src/include/clFFT.h ${CMAKE_BINARY_DIR}/clFFT/src/include/clFFT.version.h ${CMAKE_INSTALL_PREFIX}/include)
 else()
-	set(LIBS ${LIBS} $<TARGET_FILE:alenka-signal>)
+	add_custom_target(install-alenka-signal
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
 endif()
-
-add_custom_target(install-alenka-signal
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
-	COMMAND ${CMAKE_COMMAND} -E copy ${LIBS} ${CMAKE_INSTALL_PREFIX}/lib
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
