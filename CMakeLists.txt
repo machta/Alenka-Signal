@@ -12,6 +12,9 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES)
+else()
+	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fopenmp)
+	#set(CMAKE_STATIC_LINKER_FLAGS ${CMAKE_STATIC_LINKER_FLAGS} -fopenmp)
 endif()
 
 if(USE_CL_1_2)

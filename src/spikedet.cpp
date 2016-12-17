@@ -500,7 +500,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	}
 
 	// run filtering
-	vector<float> out, af, bf;
+	vector<float> af, bf;
 
 	for (double e : a)
 		af.push_back(e);
@@ -508,8 +508,10 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	for (double e : b)
 		bf.push_back(e);
 
+	#pragma omp parallel for
 	for (i = 0; i < countChannels; i++)
 	{
+		vector<float> out;
 		filtfilt(bf, af, data[i], out);
 
 		assert(data[i].size() == out.size());
@@ -566,8 +568,10 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	for (double e : b)
 		bf.push_back(e);
 
+	#pragma omp parallel for
 	for (i = 0; i < countChannels; i++)
 	{
+		vector<float> out;
 		filtfilt(bf, af, data[i], out);
 
 		assert(data[i].size() == out.size());
@@ -614,11 +618,11 @@ void Filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& f
 		a.push_back(tmp);
 		a.push_back(r*r);
 
-		vector<float> out;
-
 		//filt50Hz(data, countChannels, b, a);
+		#pragma omp parallel for
 		for (int j = 0; j < countChannels; j++)
 		{
+			vector<float> out;
 			filtfilt(b, a, data[j], out);
 
 			assert(data[j].size() == out.size());
@@ -1812,6 +1816,8 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	// local maxima detection
 	ret = new ONECHANNELDETECTRET*[countChannels];
 	threads = new COneChannelDetect*[countChannels];
+
+	#pragma omp parallel for // This parallel optimization has the most effect. TODO: measure speedup for different instances
 	for (i = 0; i < countChannels; i++)
 	{
 		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
