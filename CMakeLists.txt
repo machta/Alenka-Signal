@@ -25,8 +25,8 @@ find_package(OpenCL REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # First build all the library dependencies.
-set(BUILD_LOADLIBRARIES false)
-set(BUILD_EXAMPLES false)
+set(BUILD_LOADLIBRARIES off CACHE BOOL "")
+set(BUILD_EXAMPLES off CACHE BOOL "")
 add_subdirectory(clFFT/src)
 include_directories(clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
 
@@ -61,6 +61,6 @@ if(BUILD_CLFFT)
 else()
 	add_custom_target(install-alenka-signal
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
 endif()
