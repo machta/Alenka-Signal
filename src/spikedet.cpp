@@ -2086,6 +2086,8 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 	assert(D*decimationF == fs);
 
 	vector<T>* output = new vector<T>[channelCount];
+
+	#pragma omp parallel for
 	for (int i = 0; i < channelCount; i++)
 	{
 		int size = (stop - start)/D;

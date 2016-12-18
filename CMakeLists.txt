@@ -21,7 +21,7 @@ if(USE_CL_1_2)
 	add_definitions(-DCL_1_2)
 endif()
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCL)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # First build all the library dependencies.
