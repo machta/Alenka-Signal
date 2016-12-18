@@ -12,9 +12,9 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp")
 else()
-	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fopenmp)
-	#set(CMAKE_STATIC_LINKER_FLAGS ${CMAKE_STATIC_LINKER_FLAGS} -fopenmp)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 endif()
 
 if(USE_CL_1_2)
@@ -35,21 +35,21 @@ set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
 set(LIBS_TO_LINK_ALENKA_SIGNAL ${LIBS_TO_LINK_ALENKA_SIGNAL} PARENT_SCOPE)
 
 # The library.
+file(GLOB SRC1 src/*)
+file(GLOB SRC2 alglib/src/*.cpp)
+add_library(alenka-signal STATIC ${SRC1} ${SRC2})
+
 if(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion -pedantic")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
+	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-W4")
+else()
+	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-Wall -pedantic")# -Wextra -Wconversion")
 endif()
 
 include_directories(include alglib/src eigen)
 
 if(BUILD_TESTS_ALENKA_SIGNAL)
-	add_subdirectory (unit-test)
+	add_subdirectory(unit-test)
 endif()
-
-file(GLOB SRC src/* alglib/src/*.cpp)
-add_library(alenka-signal ${SRC})
 
 # Install rule.
 if(BUILD_CLFFT)
