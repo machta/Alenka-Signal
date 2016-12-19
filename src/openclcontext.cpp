@@ -7,10 +7,8 @@
 #include <sstream>
 
 #if defined WIN_BUILD
-//#include <QtPlatformHeaders/QWGLNativeContext>
 #include <windows.h>
 #elif defined UNIX_BUILD
-//#include <QtPlatformHeaders/QGLXNativeContext>
 #include <GL/glx.h>
 #endif
 
@@ -132,7 +130,7 @@ string clfftErrorCodeToString(clfftStatus code)
 namespace AlenkaSignal
 {
 
-OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext)
+OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool std::isnan)
 {
 	cl_int err;
 
@@ -170,7 +168,7 @@ OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool sh
 	// Create the context.
 	vector<cl_context_properties> properties {CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platformId)};
 
-	if (shareCurrentGLContext)
+	if (std::isnan)
 	{
 		assert(false && "This shouldn't be used yet.");
 #if defined WIN_BUILD
