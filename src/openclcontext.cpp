@@ -130,7 +130,7 @@ string clfftErrorCodeToString(clfftStatus code)
 namespace AlenkaSignal
 {
 
-OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool std::isnan)
+OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext)
 {
 	cl_int err;
 
@@ -168,7 +168,7 @@ OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool st
 	// Create the context.
 	vector<cl_context_properties> properties {CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platformId)};
 
-	if (std::isnan)
+	if (shareCurrentGLContext)
 	{
 		assert(false && "This shouldn't be used yet.");
 #if defined WIN_BUILD
@@ -401,7 +401,7 @@ void OpenCLContext::printBuffer(FILE* file, float* data, int n)
 	for (int i = 0; i < n; ++i)
 	{
 		float tmp = data[i];
-		if (isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
+		if (std::isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
 			tmp = 111111111;
 		fprintf(file, "%f\n", tmp);
 	}
@@ -468,7 +468,7 @@ void OpenCLContext::printBufferDouble(FILE* file, double* data, int n)
 	for (int i = 0; i < n; ++i)
 	{
 		double tmp = data[i];
-		if (isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
+		if (std::isnan(tmp)/* || tmp < -1000*1000*1000 || tmp > 1000*1000*1000*/)
 			tmp = 111111111;
 		fprintf(file, "%f\n", tmp);
 	}
