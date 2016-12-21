@@ -9,11 +9,13 @@ function download
 
 data0=skipped
 data1=skipped
+data2=skipped
 
 md5sum -c --quiet data.md5 ||
 {
 	{ download hr3l0c2f79ka8kx alenka-signal-data0 && data0=OK || data0=fail; }
 	{ download e5louj39081tnju alenka-signal-data1 && data1=OK || data1=fail; }
+	{ download rlroatzft75m4d9 alenka-signal-data2 && data2=OK || data2=fail; }
 } &&
 md5sum -c --quiet data.md5 &&
 md5=OK || md5=fail
@@ -24,4 +26,6 @@ echo "File                Status"
 echo ================================
 echo "data0               $data0"
 echo "data1               $data1"
+echo "data2               $data2"
 echo "md5sum              $md5"
+

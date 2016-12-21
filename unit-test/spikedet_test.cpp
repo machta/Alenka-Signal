@@ -15,14 +15,14 @@ namespace
 {
 
 template<class T>
-class Loader : public SpikedetDataLoader<T>
+class DataFileLoader : public SpikedetDataLoader<T>
 {
 public:
 	DataFile* file;
 
-	Loader(DataFile* file) : file(file)
+	DataFileLoader(DataFile* file) : file(file)
 	{}
-	virtual ~Loader() override
+	virtual ~DataFileLoader() override
 	{}
 
 	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) override
@@ -40,7 +40,43 @@ public:
 };
 
 template<class T>
-void test(DataFile* file, DETECTOR_SETTINGS settings)
+class VectorLoader : public SpikedetDataLoader<T>
+{
+public:
+	vector<T> signal;
+	int channels;
+	int length;
+
+	VectorLoader(vector<T> signal, int channels) : signal(signal), channels(channels), length(signal.size()/channels)
+	{
+		assert(signal.size() == channels*length);
+	}
+	virtual ~VectorLoader() override
+	{}
+
+	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) override
+	{
+		int64_t len = lastSample - firstSample + 1;
+		for (int j = 0; j < channels; j++)
+			for (int64_t i = firstSample; i <= lastSample; i++)
+			{
+				T sample = i < 0 || i >= length ? 0 : signal.at(j*length + i);
+
+				data[j*len + i - firstSample] = sample;
+			}
+	}
+	virtual int64_t sampleCount() override
+	{
+		return length;
+	}
+	virtual int channelCount() override
+	{
+		return channels;
+	}
+};
+
+template<class T>
+void test(SpikedetDataLoader<T>* loader, double fs, DETECTOR_SETTINGS settings)
 {
 	clfftStatus errFFT;
 	clfftSetupData setupData;
@@ -54,13 +90,22 @@ void test(DataFile* file, DETECTOR_SETTINGS settings)
 	{
 		OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 
-		Loader<T> loader(file);
+		Spikedet<T> det(fs, loader->channelCount(), settings, &context);
+		CDetectorOutput* out;
+		CDischarges* dis;
 
-		Spikedet<T> det(loader.file->getSamplingFrequency(), loader.channelCount(), settings, &context);
-		CDetectorOutput* out = new CDetectorOutput;
-		CDischarges* dis = new CDischarges(loader.channelCount());
-		det.runAnalysis(&loader, out, dis);
+		out = new CDetectorOutput;
+		dis = new CDischarges(loader->channelCount());
+		det.runAnalysis(loader, out, dis);
+		unsigned int spikes = out->m_pos.size();
+		cerr << "Spikes detected: " << spikes << endl;
+		delete out;
+		delete dis;
 
+		out = new CDetectorOutput;
+		dis = new CDischarges(loader->channelCount());
+		det.runAnalysis(loader, out, dis);
+		EXPECT_EQ(spikes, out->m_pos.size());
 		delete out;
 		delete dis;
 	}
@@ -104,50 +149,79 @@ protected:
 
 TEST_F(spikedet_test, IED_P001_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P002_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P003_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P004_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P005_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P006_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P007_default_float)
 {
-	unique_ptr<DataFile> file(new EDF(path + "IED_P001.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	EDF file(path + "IED_P001.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 // TODO: make double version of the above tests
 
-TEST_F(spikedet_test, bug)
+TEST_F(spikedet_test, index_bug)
 {
-	unique_ptr<DataFile> file(new EDF(path + "edfsample.edf"));
-	EXPECT_NO_THROW(printException([&] () { test<float>(file.get(), defaultSettings); }));
+	// This tests the bug when computing segment indices.
+	EDF file(path + "edfsample.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
+}
+
+TEST_F(spikedet_test, zeroChannel_bug0)
+{
+	// This tests the strange case when you get nan values and it causes an exception.
+	EDF file(path + "zeroChannel.edf");
+	DataFileLoader<float> loader(&file);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
+}
+
+TEST_F(spikedet_test, zeroChannel_bug1)
+{
+	// This test does not appear to be effective, but I will keep it all the same.
+	int len = 100000;
+	vector<float> signal(3*len);
+	for (int i = len; i < 2*len; i++)
+		signal[i] = i;
+
+	VectorLoader<float> loader(signal, 3);
+	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, 200, defaultSettings); }));
 }

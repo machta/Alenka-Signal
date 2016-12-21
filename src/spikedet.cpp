@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <complex>
 #include <numeric>
+#include <iostream>
 
 #include <Eigen/Dense>
 using namespace std;
@@ -896,11 +897,22 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 			alglib::spline1dconvcubic(xreal, yrealMedian, x2real, retMedian);
 			alglib::spline1dconvcubic(xreal, yrealStd, x2real, retStd);
 		}
-		catch(alglib::ap_error e)
+		catch (alglib::ap_error e)
 		{
-			//cout << "Aglib msg: " << e.msg.c_str() << endl;
-			return NULL;
+			cerr << "Aglib warning: " << e.msg.c_str() << endl;
+			//return NULL;
+			// This exception causes the error for the 130 channel file. It fails on the channels that are all zero.
+			// So, rather than to return an empty result, fill the result with zeroes.
+
+			assert(yrealMedian.length() == yrealStd.length());
+			assert(retMedian.length() == 0 && retStd.length() == 0);
+
+			vector<double> tmpArray(yrealMedian.length());
+			retMedian.setcontent(tmpArray.size(), tmpArray.data());
+			retStd.setcontent(tmpArray.size(), tmpArray.data());
 		}
+
+		assert(retMedian.length() == retStd.length());
 
 		for (i = 0; i < retMedian.length(); i++)
 		{
@@ -1632,12 +1644,15 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 				{
 					minMP = INT_MAX;
 					for (k = 0; k < countChannels; k++)
+					{
+						assert(j < static_cast<int>(subDischarges->m_MP[k].size()));
+						//if (j < subDischarges->m_MP[k].size() && subDischarges->m_MP[k].at(j) < minMP)
 						if (subDischarges->m_MP[k].at(j) < minMP)
-								minMP = subDischarges->m_MP[k].at(j);
+							minMP = subDischarges->m_MP[k].at(j);
+					}
 
-					if (minMP < tmpFirst*3*m_settings->m_winsize ||
-						minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
-								removeDish.push_back(j);
+					if (minMP < tmpFirst*3*m_settings->m_winsize || minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*fs)/fs)
+						removeDish.push_back(j);
 				}
 				subDischarges->Remove(removeDish);
 			}
