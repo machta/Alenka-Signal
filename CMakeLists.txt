@@ -4,7 +4,7 @@ project(Alenka-Signal)
 # Options.
 option(BUILD_TESTS_ALENKA_SIGNAL "Builds unit tests for Alenka-Signal." OFF)
 option(USE_CL_1_2 "Use OpenCL 1.2" ON)
-option(BUILD_CLFFT "Should a local build of clFFT library be used." OFF)
+option(BUILD_CLFFT "Should a local build of clFFT library be used." ON) # Possibly make this mandatory and remove the option.
 set(CMAKE_CXX_STANDARD 11)
 set(BUILD_SHARED_LIBS off CACHE BOOL "")
 
@@ -15,6 +15,9 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp")
 else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+		add_definitions(-D_GLIBCXX_DEBUG)
+	endif()
 endif()
 
 if(USE_CL_1_2)

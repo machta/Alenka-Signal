@@ -2,7 +2,7 @@
 
 #include <AlenkaSignal/openclcontext.h>
 #include <AlenkaSignal/spikedet.h>
-#include <Alenka-File/edf.h>
+#include <AlenkaFile/edf.h>
 
 #include <functional>
 #include <memory>

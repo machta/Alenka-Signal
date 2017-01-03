@@ -5,6 +5,7 @@ add_subdirectory(googletest)
 include_directories(../include googletest/googletest/include)
 
 # alenka-file
+set(Boost_INCLUDE_DIR "")
 set(ALENKA_FILE_DIR ../../Alenka-File CACHE PATH "Path to Alenka-File source.")
 add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
 include_directories(${ALENKA_FILE_DIR}/include)
