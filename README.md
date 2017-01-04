@@ -22,8 +22,9 @@ On debian-like systems you can use: `sudo apt install git cmake-gui build-essent
 Here is an example of the setup using git-bash (or regular bash):
 ``` bash
 ./download-libraries.sh
-mkdir build-Release-64
-cd build-Release-64
-cmake .. -D "CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=install-dir"
-cmake --build . --config Release --target install-alenka-signal
+mkdir build-Release-64 && cd build-Release-64
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install-dir ..
+# On Windows: cmake -D CMAKE_INSTALL_PREFIX=install-dir -G "Visual Studio 14 2015 Win64" ..
+cmake --build . --config Release --target install-alenka-file
 ```
+
