@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <regex>
 
 namespace AlenkaSignal
 {
@@ -54,9 +55,13 @@ public:
 	static bool test(const std::string& source, OpenCLContext* context, std::string* errorMessage = nullptr, const std::string& headerSource = "");
 	
 	/**
-	 * @brief Returns the text of the montageHeader.cl file.
+	 * @brief stripComments removes single line and block comments from OpenCL code.
 	 */
-	static std::string readHeader();
+	static std::string stripComments(const std::string& code)
+	{
+		const static std::regex commentre(R"((/\*([^*]|(\*+[^*/]))*\*+/)|(//.*))");
+		return std::regex_replace(code, commentre, "");
+	}
 
 private:
 	OpenCLProgram program;
