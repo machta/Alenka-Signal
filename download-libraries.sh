@@ -4,8 +4,7 @@ if [ -d clFFT ]
 then
 	clFFT=skipped
 else
-	#git clone --depth 1 https://github.com/clMathLibraries/clFFT.git &&
-	git clone --depth 1 https://github.com/machta/clFFT.git -b locale-bug &&
+	git clone --depth 1 https://github.com/clMathLibraries/clFFT.git -b develop && # TODO: Switch to master for the new release that includes the locale fix.
 	clFFT=OK || clFFT=fail
 fi
 
