@@ -47,7 +47,6 @@ public:
 	 * will probably need to be modified when the code is ported to other platforms.
 	 */
 	OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext = false);
-
 	~OpenCLContext();
 
 	/**

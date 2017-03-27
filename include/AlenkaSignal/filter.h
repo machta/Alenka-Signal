@@ -33,10 +33,7 @@ public:
 	 * will be returned.
 	 * @param Fs The sampling frequency.
 	 */
-	Filter(unsigned int M, double Fs, double notchWidth = 3) : M(M), Fs(Fs), notchWidth(notchWidth)
-	{}
-	~Filter()
-	{}
+	Filter(unsigned int M, double Fs, double notchWidth = 3) : M(M), Fs(Fs), notchWidth(notchWidth){}
 
 	/**
 	 * @brief Returns a vector with the coefficients.

@@ -23,8 +23,8 @@ template<class T>
 class SpikedetDataLoader
 {
 public:
-	virtual ~SpikedetDataLoader()
-	{}
+	virtual ~SpikedetDataLoader() {}
+
 	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) = 0;
 	virtual int64_t sampleCount() = 0;
 	virtual int channelCount() = 0;

@@ -4,7 +4,7 @@
 * git
 * cmake (for Ubuntu 14 download the latest version)
 * OpenCL and OpenGL libraries (if you don't have the hardware for this use AMD APP SDK for a CPU implementation of OpenCL)
-* G++ or Visual C++ compiler
+* g++ or Visual C++ compiler
 
 On debian-like systems you can use: `sudo apt install git cmake-gui build-essential`
 
