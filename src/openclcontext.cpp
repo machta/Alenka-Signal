@@ -245,7 +245,7 @@ string OpenCLContext::getPlatformInfo() const
 	char* tmp = new char[maxSize];
 	string str;
 
-	str += "Available platforms:";
+	str += "Available platforms (" + to_string(platformCount) + "):";
 	for (cl_uint i = 0; i < platformCount; ++i)
 	{
 		if (platformIDs[i] == getCLPlatform())
@@ -323,7 +323,7 @@ string OpenCLContext::getDeviceInfo() const
 	string str;
 	char* tmp = new char[maxSize];
 
-	str += "Available devices:";
+	str += "Available devices (" + to_string(deviceCount) + "):";
 	for (cl_uint i = 0; i < deviceCount; ++i)
 	{
 		if (deviceIDs[i] == getCLDevice())
