@@ -55,15 +55,17 @@ if(BUILD_TESTS_ALENKA_SIGNAL)
 endif()
 
 # Install rule.
+file(GLOB HEADERS include/AlenkaSignal/*)
+
 if(BUILD_CLFFT)
 	add_custom_target(install-alenka-signal
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:clFFT> $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/clFFT/src/include/clFFT.h ${CMAKE_BINARY_DIR}/clFFT/src/include/clFFT.version.h ${CMAKE_INSTALL_PREFIX}/include)
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:clFFT> $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${HEADERS} ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/clFFT/src/include/clFFT.h ${CMAKE_BINARY_DIR}/clFFT/src/include/clFFT.version.h ${CMAKE_INSTALL_PREFIX}/include)
 else()
 	add_custom_target(install-alenka-signal
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${HEADERS} ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal)
 endif()

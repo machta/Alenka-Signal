@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Downloads the test files from Dropbox.
+# This is a workaround for GitHub's screwed up LFS system.
+
 function download
 {
 	curl -L 'https://www.dropbox.com/s/'$1/$2'.zip?dl=0' > $2.zip &&

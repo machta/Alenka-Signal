@@ -24,7 +24,3 @@ if(MSVC)
 else()
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-Wall -pedantic")# -Wextra -Wconversion")
 endif()
-
-# Download test files if needed. This is a workaround for GitHub's screwed up LFS system.
-add_custom_command(TARGET PRE_BUILD unit-test COMMAND bash download-data.sh WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/unit-test/data)
-
