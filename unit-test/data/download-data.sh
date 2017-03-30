@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Downloads the test files from Dropbox.
+# Usage: ./download-data.sh
+#
+# This script downloads the test files from Dropbox.
 # This is a workaround for GitHub's screwed up LFS system.
+# Use Git Bash or a similar tool to run this on Windows.
 
 function download
 {

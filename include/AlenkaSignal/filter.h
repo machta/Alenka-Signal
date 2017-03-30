@@ -33,7 +33,7 @@ public:
 	 * will be returned.
 	 * @param Fs The sampling frequency.
 	 */
-	Filter(unsigned int M, double Fs, double notchWidth = 3) : M(M), Fs(Fs), notchWidth(notchWidth){}
+	Filter(unsigned int M, double Fs, double notchWidth = 3) : M(M), Fs(Fs), notchWidth(notchWidth) {}
 
 	/**
 	 * @brief Returns a vector with the coefficients.
@@ -90,25 +90,11 @@ public:
 	{
 		notchF = value/Fs*2;
 	}
-	void printCoefficients(FILE* file, const std::vector<T>& coefficients);
 
 private:
 	unsigned int M;
 	double Fs, lowpassF, highpassF, notchF, notchWidth;
 	bool notchOn = false, lowpassOn = false, highpassOn = false;
-
-	double hammingWindow(int n, int M)
-	{
-		using namespace std;
-		const double tmp = 2*M_PI*n/(M - 1);
-		return 0.54 - 0.46*cos(tmp);
-	}
-	double blackmanWindow(int n, int M)
-	{
-		using namespace std;
-		const double a = 0.16, a0 = (1 - a)/2, a1 = 0.5, a2 = a/2, tmp = 2*M_PI*n/(M - 1);
-		return a0 - a1*cos(tmp) + a2*cos(2*tmp);
-	}
 };
 
 } // namespace AlenkaSignal

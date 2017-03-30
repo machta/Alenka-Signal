@@ -45,16 +45,6 @@ vector<T> Filter<T>::computeSamples()
 	return samples;
 }
 
-template<class T>
-void Filter<T>::printCoefficients(FILE* file, const vector<T>& coefficients)
-{
-	fprintf(file, "%lf\n%lf\n%lf\n", Fs, getLowpass(), getHighpass());
-	for (unsigned int i = 0; i < M; ++i)
-	{
-		fprintf(file, "%lf\n", coefficients[i]);
-	}
-}
-
 template class Filter<float>;
 template class Filter<double>;
 

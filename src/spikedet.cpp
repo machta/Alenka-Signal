@@ -1483,8 +1483,9 @@ Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, Open
 	//filter.setLowpass(min(decimationF, settings.m_band_high));
 	filter.setLowpass(decimationF);
 
-	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context, WindowFunction::Hamming);
+	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context);
 	filterProcessor->changeSampleFilter(M, filter.computeSamples());
+	filterProcessor->applyWindow(WindowFunction::Hamming);
 
 #ifndef NDEBUG
 	//FILE* file = fopen("spikedet_coefficients.txt", "w");

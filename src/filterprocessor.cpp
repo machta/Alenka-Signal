@@ -37,8 +37,8 @@ namespace AlenkaSignal
 {
 
 template<class T>
-FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context, WindowFunction windowFunction)
-	: blockLength(blockLength), blockChannels(channels), windowFunction(windowFunction)
+FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int channels, OpenCLContext* context)
+	: blockLength(blockLength), blockChannels(channels)
 {
 	assert(blockLength%2 == 0);
 
@@ -222,7 +222,6 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 
 	coefficientsChanged = true;
 	this->M = M;
-	//this->samples = samples;
 
 	int cM = 1 + M/2;
 
@@ -266,22 +265,24 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 
 	coefficients.resize(M);
 	for (int i = 0; i < M; i++)
-		coefficients[i] = outArray[i];
+		coefficients[i] = outArray[i];	
+}
 
-	// Try to improve filter characteristics by applying a window function.
+template<class T>
+void FilterProcessor<T>::applyWindow(WindowFunction windowFunction)
+{
+	assert(static_cast<int>(coefficients.size()) == M);
+	coefficientsChanged = true;
+
 	if (windowFunction == WindowFunction::Hamming)
 	{
 		for (int i = 0; i < M; ++i)
-		{
 			coefficients[i] *= hammingWindow<T>(i, M);
-		}
 	}
 	else if (windowFunction == WindowFunction::Blackman)
 	{
 		for (int i = 0; i < M; ++i)
-		{
 			coefficients[i] *= blackmanWindow<T>(i, M);
-		}
 	}
 }
 

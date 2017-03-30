@@ -24,10 +24,11 @@ template<class T>
 class FilterProcessor
 {
 public:
-	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context, WindowFunction windowFunction = WindowFunction::None);
+	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context);
 	~FilterProcessor();
 
 	void process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue);
+
 	void changeFilter(const std::vector<T>& coefficients)
 	{
 		coefficientsChanged = true;
@@ -35,6 +36,8 @@ public:
 		this->coefficients = coefficients;
 	}
 	void changeSampleFilter(int M, const std::vector<T>& samples);
+	void applyWindow(WindowFunction windowFunction);
+
 	int delaySamples() const
 	{
 		return (M - 1)/2;
@@ -43,7 +46,8 @@ public:
 	{
 		return M - 1;
 	}
-	std::vector<T> getCoefficients() const
+
+	const std::vector<T>& getCoefficients() const
 	{
 		return coefficients;
 	}
@@ -51,7 +55,6 @@ public:
 private:
 	unsigned int blockLength;
 	unsigned int blockChannels;
-	WindowFunction windowFunction;
 
 	int M;
 	bool coefficientsChanged = false;
