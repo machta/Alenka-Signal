@@ -100,9 +100,6 @@ public:
 		err = clEnqueueWaitForEvents(commandQueue, 1, &event);
 		checkClErrorCode(err, "clEnqueueWaitForEvents()");
 #endif
-
-		err = clReleaseEvent(event);
-		checkClErrorCode(err, "clReleaseEvent()");
 	}
 
 	static void CCEC(cl_int val, std::string message, const char* file, int line);
