@@ -102,6 +102,13 @@ bool Montage<T>::test(const std::string& source, OpenCLContext* context, string*
 	}
 }
 
+template<class T>
+string Montage<T>::stripComments(const string& code)
+{
+	const static std::regex commentre(R"((/\*([^*]|(\*+[^*/]))*\*+/)|(//.*))");
+	return regex_replace(code, commentre, string(""));
+}
+
 template class Montage<float>;
 template class Montage<double>;
 

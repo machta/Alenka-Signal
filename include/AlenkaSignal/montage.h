@@ -5,9 +5,7 @@
 
 #include <CL/cl_gl.h>
 
-#include <vector>
 #include <string>
-#include <regex>
 
 namespace AlenkaSignal
 {
@@ -31,7 +29,7 @@ class Montage
 public:
 	/**
 	 * @brief Montage constructor.
-	 * @param sources Vector of string formulas for individual tracks.
+	 * @param sources OpenCL source code of the montage.
 	 */
 	Montage(const std::string& source, OpenCLContext* context, const std::string& headerSource = "");
 	~Montage();
@@ -55,13 +53,9 @@ public:
 	static bool test(const std::string& source, OpenCLContext* context, std::string* errorMessage = nullptr, const std::string& headerSource = "");
 	
 	/**
-	 * @brief stripComments removes single line and block comments from OpenCL code.
+	 * @brief Removes single line and block comments from OpenCL code.
 	 */
-	static std::string stripComments(const std::string& code)
-	{
-		const static std::regex commentre(R"((/\*([^*]|(\*+[^*/]))*\*+/)|(//.*))");
-		return std::regex_replace(code, commentre, "");
-	}
+	static std::string stripComments(const std::string& code);
 
 private:
 	OpenCLProgram program;
