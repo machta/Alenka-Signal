@@ -58,8 +58,8 @@ namespace AlenkaSignal
 {
 
 template<class T>
-Montage<T>::Montage(const string& source, OpenCLContext* context, const string& headerSource) :
-	program(OpenCLProgram(buildSource<T>(source, headerSource), context))
+Montage<T>::Montage(const string& source, OpenCLContext* context, const string& headerSource)
+	: program(OpenCLProgram(buildSource<T>(source, headerSource), context))
 {
 	//logToFile("Constructing montage with " << source.size() << " tracks.");
 }

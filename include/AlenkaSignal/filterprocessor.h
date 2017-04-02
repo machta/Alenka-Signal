@@ -6,7 +6,6 @@
 #include <cassert>
 #include <vector>
 
-
 namespace AlenkaSignal
 {
 
