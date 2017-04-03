@@ -23,12 +23,12 @@ OpenCLProgram::OpenCLProgram(const string& source, OpenCLContext* context) : con
 	build();
 }
 
-OpenCLProgram::OpenCLProgram(const std::vector<unsigned char>& binary, OpenCLContext* context)
+OpenCLProgram::OpenCLProgram(const vector<unsigned char>* binary, OpenCLContext* context)
 {
 	cl_int err, status;
 	auto device = context->getCLDevice();
-	size_t size = binary.size();
-	const unsigned char* binaryPtr = binary.data();
+	size_t size = binary->size();
+	const unsigned char* binaryPtr = binary->data();
 
 	program = clCreateProgramWithBinary(context->getCLContext(), 1, &device, &size, &binaryPtr, &status, &err);
 	checkClErrorCode(err, "clCreateProgramWithBinary()");
@@ -47,7 +47,7 @@ cl_kernel OpenCLProgram::createKernel(const string& kernelName)
 {
 	if (compilationSuccessful() == false)
 	{
-		throw std::runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");
+		throw runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");
 	}
 
 	cl_int err;
@@ -78,20 +78,20 @@ string OpenCLProgram::getCompilationLog() const
 	return str;
 }
 
-std::vector<unsigned char> OpenCLProgram::getBinary()
+vector<unsigned char>* OpenCLProgram::getBinary()
 {
 	size_t size = sizeof(size_t);
 
 	cl_int err = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &size, nullptr);
 	checkClErrorCode(err, "clGetProgramInfo()");
 
-	std::vector<unsigned char> binary;
+	auto binary = new vector<unsigned char>();
 
 	if (size > 0)
 	{
-		binary.resize(size);
+		binary->resize(size);
 
-		unsigned char* value = binary.data();
+		unsigned char* value = binary->data();
 
 		err = clGetProgramInfo(program, CL_PROGRAM_BINARIES, size, &value, nullptr);
 		checkClErrorCode(err, "clGetProgramInfo()");

@@ -32,7 +32,7 @@ public:
 	 * @param sources OpenCL source code of the montage.
 	 */
 	Montage(const std::string& source, OpenCLContext* context, const std::string& headerSource = "");
-	Montage(const std::vector<unsigned char>& binary, OpenCLContext* context) : program(OpenCLProgram(binary, context)) {}
+	Montage(const std::vector<unsigned char>* binary, OpenCLContext* context) : program(OpenCLProgram(binary, context)) {}
 	~Montage();
 
 	/**
@@ -45,7 +45,7 @@ public:
 		return kernel;
 	}
 
-	std::vector<unsigned char> getBinary()
+	std::vector<unsigned char>* getBinary()
 	{
 		return program.getBinary();
 	}

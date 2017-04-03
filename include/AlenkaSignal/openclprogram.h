@@ -24,7 +24,7 @@ public:
 	 * @param source The source string.
 	 */
 	OpenCLProgram(const std::string& source, OpenCLContext* context);
-	OpenCLProgram(const std::vector<unsigned char>& binary, OpenCLContext* context);
+	OpenCLProgram(const std::vector<unsigned char>* binary, OpenCLContext* context);
 	~OpenCLProgram();
 
 	/**
@@ -50,7 +50,7 @@ public:
 	 */
 	std::string getCompilationLog() const;
 
-	std::vector<unsigned char> getBinary();
+	std::vector<unsigned char>* getBinary();
 
 private:
 	cl_program program;
