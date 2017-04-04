@@ -45,11 +45,16 @@ float in(int i, PARA)
 }
 
 // This test matches the most frequently used code: "out = int(1);" and similar.
-const regex re(R"(\s*out\s*=\s*in\s*\(\s*\d+\s*\)\s*;\s*)");
 
-bool testRegex(const std::string& source)
+bool testRegex(const string& source)
 {
-	return regex_match(source, re);
+	try
+	{
+		const static regex re(R"(\s*out\s*=\s*in\s*\(\s*\d+\s*\)\s*;\s*)");
+		return regex_match(source, re);
+	}
+	catch (regex_error) {}
+	return false;
 }
 
 } // namespace
@@ -73,7 +78,7 @@ Montage<T>::~Montage()
 }
 
 template<class T>
-bool Montage<T>::test(const std::string& source, OpenCLContext* context, string* errorMessage, const string& headerSource)
+bool Montage<T>::test(const string& source, OpenCLContext* context, string* errorMessage, const string& headerSource)
 {
 	//logToFile("Testing montage code.");
 
@@ -105,8 +110,13 @@ bool Montage<T>::test(const std::string& source, OpenCLContext* context, string*
 template<class T>
 string Montage<T>::stripComments(const string& code)
 {
-	const static std::regex commentre(R"((/\*([^*]|(\*+[^*/]))*\*+/)|(//.*))");
-	return regex_replace(code, commentre, string(""));
+	try
+	{
+		const static regex commentre(R"((/\*([^*]|(\*+[^*/]))*\*+/)|(//.*))");
+		return regex_replace(code, commentre, string(""));
+	}
+	catch (regex_error) {}
+	return code;
 }
 
 template class Montage<float>;
