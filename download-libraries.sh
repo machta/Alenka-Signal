@@ -43,7 +43,7 @@ fi
 
 echo
 echo ========== Download summary ==========
-echo "Library                 Status"
+echo "Library path            Status"
 echo ======================================
 echo "clFFT                   $clFFT"
 echo "unit-test/googletest    $googletest"

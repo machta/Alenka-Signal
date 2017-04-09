@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include <AlenkaSignal/openclcontext.h>
 #include <AlenkaSignal/filterprocessor.h>
