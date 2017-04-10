@@ -15,9 +15,8 @@ string buildSource(const string& source, const string& headerSource)
 	// TODO: add proper indentation
 	string src;
 
-	src += "#define float ";
-	src += is_same<float, T>::value ? "float" : "double";
-	src += "\n";
+	if (is_same<T, double>::value)
+		src += "#define float double\n";
 
 	src += R"(
 #define PARA __global float* _input_, int _inputRowLength_, int _inputRowOffset_, int _channelsInFile_
@@ -27,7 +26,6 @@ float in(int i, PARA)
 {
 	return 0 <= i && i < _channelsInFile_ ? _input_[_inputRowLength_*i + _inputRowOffset_ + get_global_id(0)] : /*NAN*/0; // The NAN value makes the signal line disappear, which makes it apparent that the user made a mistake. It caused problems during compilation on some platforms, so I replaced it.
 }
-
 #define in(a_) in(a_, PASS))";
 
 	src += headerSource;

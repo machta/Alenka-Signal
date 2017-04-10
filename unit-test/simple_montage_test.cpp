@@ -31,7 +31,7 @@ void test(function<void(T, T)> compare)
 
 	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, nullptr);
-	MontageProcessor<T> processor(offset, n - offset, inChannels);
+	MontageProcessor<T> processor(n, n - offset, inChannels);
 
 	string src = "out = in(0);";
 	string msg;
@@ -50,7 +50,7 @@ void test(function<void(T, T)> compare)
 	vector<T> signal;
 	for (int j = 0; j < inChannels; j++)
 	for (int i = 1; i <= n; i++)
-	signal.push_back(10*pow(10,j) + i);
+	signal.push_back(10*pow(10, j) + i);
 
 	vector<T> output((n - offset)*montage.size());
 
@@ -64,22 +64,22 @@ void test(function<void(T, T)> compare)
 
 	for (int i = 0; i < n - offset; i++)
 	{
-		compare(output[(n - offset)*0 + i], signal[offset + i]);
+		compare(output[(n - offset)*0 + i], signal[i]);
 	}
 
 	for (int i = 0; i < n - offset; i++)
 	{
-		compare(output[(n - offset)*1 + i], signal[n + offset + i]);
+		compare(output[(n - offset)*1 + i], signal[n + i]);
 	}
 
 	for (int i = 0; i < n - offset; i++)
 	{
-		compare(output[(n - offset)*2 + i], signal[offset + i] + signal[n + offset + i]);
+		compare(output[(n - offset)*2 + i], signal[i] + signal[n + i]);
 	}
 
 	for (int i = 0; i < n - offset; i++)
 	{
-		compare(output[(n - offset)*3 + i], signal[2*n + offset + i]*3.14);
+		compare(output[(n - offset)*3 + i], signal[2*n + i]*3.14);
 	}
 
 	for (int i = 0; i < n - offset; i++)

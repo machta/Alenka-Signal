@@ -9,18 +9,7 @@ namespace AlenkaSignal
 {
 
 template<class T>
-MontageProcessor<T>::MontageProcessor(unsigned int offset, unsigned int blockLength, int channelsInFile) :
-	inputRowLength(offset + blockLength), inputRowOffset(offset), outputRowLength(blockLength), channelsInFile(channelsInFile)
-{
-}
-
-template<class T>
-MontageProcessor<T>::~MontageProcessor()
-{
-}
-
-template<class T>
-void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
+void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue, int inputRowOffset)
 {
 	cl_int err;
 
@@ -37,7 +26,8 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 		err = clSetKernelArg(montageKernel, 2, sizeof(cl_int), &inputRowLength);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 3, sizeof(cl_int), &inputRowOffset);
+		cl_int offset = inputRowOffset;
+		err = clSetKernelArg(montageKernel, 3, sizeof(cl_int), &offset);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		err = clSetKernelArg(montageKernel, 4, sizeof(cl_int), &outputRowLength);
@@ -47,7 +37,7 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 		err = clSetKernelArg(montageKernel, 5, sizeof(cl_int), &index);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 6, sizeof(cl_int), &channelsInFile);
+		err = clSetKernelArg(montageKernel, 6, sizeof(cl_int), &inputRowCount);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		size_t globalWorkSize = outputRowLength;
