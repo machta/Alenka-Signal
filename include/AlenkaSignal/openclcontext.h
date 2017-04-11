@@ -12,6 +12,7 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
 
 /**
  * @brief Simplified error code test for OpenCL functions.
@@ -46,7 +47,7 @@ public:
 	 * This is the only platform dependent code in the whole program and
 	 * will probably need to be modified when the code is ported to other platforms.
 	 */
-	OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext = false);
+	OpenCLContext(unsigned int platform, unsigned int device, std::vector<cl_context_properties> properties = std::vector<cl_context_properties>());
 	~OpenCLContext();
 
 	/**

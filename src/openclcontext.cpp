@@ -2,15 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <vector>
 #include <iostream>
 #include <sstream>
-
-#if defined WIN_BUILD
-#include <windows.h>
-#elif defined UNIX_BUILD
-#include <GL/glx.h>
-#endif
 
 using namespace std;
 
@@ -130,7 +123,7 @@ string clfftErrorCodeToString(clfftStatus code)
 namespace AlenkaSignal
 {
 
-OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool shareCurrentGLContext)
+OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, vector<cl_context_properties> properties)
 {
 	cl_int err;
 
@@ -142,11 +135,7 @@ OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool sh
 	checkClErrorCode(err, "clGetPlatformIDs()");
 
 	if (platform >= pCount)
-	{
-		stringstream ss;
-		ss << "Platform ID " << platform << " too high.";
-		throw runtime_error(ss.str());
-	}
+		throw runtime_error("Platform ID " + to_string(platform) + " too high.");
 
 	platformId = platforms[platform];
 
@@ -157,35 +146,13 @@ OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, bool sh
 	checkClErrorCode(err, "clGetDeviceIDs()");
 
 	if (device >= dCount)
-	{
-		stringstream ss;
-		ss << "Device ID " << device << " too high.";
-		throw runtime_error(ss.str());
-	}
+		throw runtime_error("Device ID " + to_string(device) + " too high.");
 
 	deviceId = devices[device];
 
 	// Create the context.
-	vector<cl_context_properties> properties {CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platformId)};
-
-	if (shareCurrentGLContext)
-	{
-		assert(false && "This shouldn't be used yet.");
-#if defined WIN_BUILD
-		properties.push_back(CL_GL_CONTEXT_KHR);
-		properties.push_back(reinterpret_cast<cl_context_properties>(wglGetCurrentContext()));
-
-		properties.push_back(CL_WGL_HDC_KHR);
-		properties.push_back(reinterpret_cast<cl_context_properties>(wglGetCurrentDC()));
-#elif defined UNIX_BUILD
-		properties.push_back(CL_GL_CONTEXT_KHR);
-		properties.push_back(reinterpret_cast<cl_context_properties>(glXGetCurrentContext()));
-
-		properties.push_back(CL_GLX_DISPLAY_KHR);
-		properties.push_back(reinterpret_cast<cl_context_properties>(glXGetCurrentDisplay()));
-#endif
-	}
-
+	properties.push_back(CL_CONTEXT_PLATFORM);
+	properties.push_back(reinterpret_cast<cl_context_properties>(platformId));
 	properties.push_back(0);
 
 	context = clCreateContext(properties.data(), 1, &deviceId, nullptr, nullptr, &err);
@@ -208,7 +175,6 @@ OpenCLContext::~OpenCLContext()
 string OpenCLContext::getPlatformInfo() const
 {
 	cl_int err;
-
 	cl_uint platformCount;
 
 	err = clGetPlatformIDs(0, nullptr, &platformCount);
