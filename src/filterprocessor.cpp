@@ -67,12 +67,12 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 #endif
 #endif
 
-	filterBuffer = clCreateBuffer(context->getCLContext(), flags, (blockLength + 4)*sizeof(T), nullptr, &err);
+	filterBuffer = clCreateBuffer(context->getCLContext(), flags, (blockLength + 2)*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
 	// Construct the fft plans.
 	size_t size = blockLength;
-	size_t bufferDistance = size + 4;
+	size_t bufferDistance = size + 2;
 
 	errFFT = clfftCreateDefaultPlan(&fftPlan, context->getCLContext(), CLFFT_1D, &size);
 	checkClfftErrorCode(errFFT, "clfftCreateDefaultPlan()");
@@ -149,8 +149,8 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
 		checkClErrorCode(err, "clGetMemObjectInfo");
 
-		assert(inSize >= (blockLength + 4)*blockChannels*sizeof(T) && "The inBuffer is too small.");
-		assert(outSize >= (blockLength + 4)*blockChannels*sizeof(T) && "The inBuffer is too small.");
+		assert(inSize >= (blockLength + 2)*blockChannels*sizeof(T) && "The inBuffer is too small.");
+		assert(outSize >= (blockLength + 2)*blockChannels*sizeof(T) && "The inBuffer is too small.");
 	}
 #endif
 
@@ -164,7 +164,7 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		// This section is disabled because of a bug in the implementation of clEnqueueFillBuffer().
 //#if CL_1_2
 //		float zero = 0;
-//		err = clEnqueueFillBuffer(queue, filterBuffer, &zero, sizeof(zero), 0, width + 4, 0, nullptr, nullptr);
+//		err = clEnqueueFillBuffer(queue, filterBuffer, &zero, sizeof(zero), 0, width + 2, 0, nullptr, nullptr);
 //		checkClErrorCode(err, "clEnqueueFillBuffer()");
 //#else
 		err = clSetKernelArg(zeroKernel, 0, sizeof(cl_mem), &filterBuffer);
@@ -201,7 +201,7 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 	err = clSetKernelArg(filterKernel, 1, sizeof(cl_mem), &filterBuffer);
 	checkClErrorCode(err, "clSetKernelArg()");
 
-	size_t globalWorkSize[2] = {blockChannels, blockLength/2};
+	size_t globalWorkSize[2] = {blockChannels, blockLength/2/* + 1*/}; // TODO: Figure out whether there should be the +1.
 
 	err = clEnqueueNDRangeKernel(queue, filterKernel, 2, nullptr, globalWorkSize, nullptr, 0, nullptr, nullptr);
 	checkClErrorCode(err, "clEnqueueNDRangeKernel()");

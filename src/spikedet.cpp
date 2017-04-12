@@ -1466,47 +1466,41 @@ template<class T>
 Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
 	fs(fs), channelCount(channelCount), settings(settings), context(context)
 {
+	progressCurrent = 0;
+	cancelComputation = false;
+
 	decimationF = settings.m_decimation;
 	decimationF = nearestGreaterDivisor(min(fs, decimationF), fs);
 
-	if (decimationF >= fs)
-		return;
+	if (decimationF < fs)
+	{
+		int M = fs + 1;
+		Filter<T> filter(M, fs);
+		//filter.notch(true);
+		//filter.highpass(true);
+		filter.lowpass(true);
 
-	int M = fs + 1;
-	Filter<T> filter(M, fs);
-	//filter.notch(true);
-	//filter.highpass(true);
-	filter.lowpass(true);
+		//filter.setNotch(settings.m_main_hum_freq);
+		//filter.setHighpass(settings.m_band_low);
+		//filter.setLowpass(min(decimationF, settings.m_band_high));
+		filter.setLowpass(decimationF);
 
-	//filter.setNotch(settings.m_main_hum_freq);
-	//filter.setHighpass(settings.m_band_low);
-	//filter.setLowpass(min(decimationF, settings.m_band_high));
-	filter.setLowpass(decimationF);
+		filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context);
+		filterProcessor->changeSampleFilter(M, filter.computeSamples());
+		filterProcessor->applyWindow(WindowFunction::Hamming);
 
-	filterProcessor = new FilterProcessor<T>(BLOCK_SIZE, channelCount, context);
-	filterProcessor->changeSampleFilter(M, filter.computeSamples());
-	filterProcessor->applyWindow(WindowFunction::Hamming);
+		cl_int err;
+		cl_mem_flags flags = CL_MEM_READ_WRITE;
 
-#ifndef NDEBUG
-	//FILE* file = fopen("spikedet_coefficients.txt", "w");
-	//filter.printCoefficients(file, filterProcessor->getCoefficients());
-	//fclose(file);
-#endif
+		queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
+		checkClErrorCode(err, "clCreateCommandQueue");
 
-	cl_int err;
-	cl_mem_flags flags = CL_MEM_READ_WRITE;
+		inBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 2)*channelCount*sizeof(T), nullptr, &err);
+		checkClErrorCode(err, "clCreateBuffer");
 
-	queue = clCreateCommandQueue(context->getCLContext(), context->getCLDevice(), 0, &err);
-	checkClErrorCode(err, "clCreateCommandQueue");
-
-	inBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
-	checkClErrorCode(err, "clCreateBuffer");
-
-	outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 4)*channelCount*sizeof(T), nullptr, &err);
-	checkClErrorCode(err, "clCreateBuffer");
-
-	progressCurrent = 0;
-	cancelComputation = false;
+		outBuffer = clCreateBuffer(context->getCLContext(), flags, (BLOCK_SIZE + 2)*channelCount*sizeof(T), nullptr, &err);
+		checkClErrorCode(err, "clCreateBuffer");
+	}
 }
 
 template<class T>
@@ -2064,7 +2058,7 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 	int len = stop - start;
 	len = (len + step - 1)/step*step;
 
-	stepBuffer.resize((BLOCK_SIZE + 4)*channelCount);
+	stepBuffer.resize((BLOCK_SIZE + 2)*channelCount);
 
 	segmentBuffer.resize(len*channelCount);
 	vector<T*> channelPointers(channelCount);
@@ -2073,9 +2067,9 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 
 	for (int i = 0; i < len; i += step)
 	{
-		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1 + 4);
+		loader->readSignal(stepBuffer.data(), start + i - discard + delay, start + i + delay + step - 1 + 2);
 
-		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, (BLOCK_SIZE + 4)*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
+		err = clEnqueueWriteBuffer(queue, inBuffer, CL_TRUE, 0, (BLOCK_SIZE + 2)*channelCount*sizeof(T), stepBuffer.data(), 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueWriteBuffer()");
 
 		filterProcessor->process(inBuffer, outBuffer, queue);
@@ -2084,7 +2078,7 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 
 		for (int j = 0; j < channelCount; j++)
 		{
-			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*(BLOCK_SIZE + 4) + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
+			err = clEnqueueReadBuffer(queue, outBuffer, /*CL_FALSE*/CL_TRUE, (j*(BLOCK_SIZE + 2) + discard)*sizeof(T), step*sizeof(T), channelPointers[j], 0, nullptr, nullptr);
 			checkClErrorCode(err, "clEnqueueReadBuffer()");
 
 			channelPointers[j] += step;

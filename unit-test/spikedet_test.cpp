@@ -156,42 +156,42 @@ TEST_F(spikedet_test, IED_P001_default_float)
 
 TEST_F(spikedet_test, IED_P002_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P002.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P003_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P003.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P004_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P004.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P005_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P005.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P006_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P006.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 TEST_F(spikedet_test, IED_P007_default_float)
 {
-	EDF file(path + "IED_P001.edf");
+	EDF file(path + "IED_P007.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
