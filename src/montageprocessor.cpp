@@ -16,28 +16,32 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 	for (unsigned int i = 0; i < montage.size(); i++)
 	{
 		cl_kernel montageKernel = montage[i]->getKernel();
+		int pi = 0;
 
-		err = clSetKernelArg(montageKernel, 0, sizeof(cl_mem), &inBuffer);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_mem), &inBuffer);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 1, sizeof(cl_mem), &outBuffer);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_mem), &outBuffer);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 2, sizeof(cl_int), &inputRowLength);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &inputRowLength);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		cl_int offset = inputRowOffset;
-		err = clSetKernelArg(montageKernel, 3, sizeof(cl_int), &offset);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &offset);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 4, sizeof(cl_int), &outputRowLength);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &inputRowCount);
+		checkClErrorCode(err, "clSetKernelArg()");
+
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &outputRowLength);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		cl_int index = i;
-		err = clSetKernelArg(montageKernel, 5, sizeof(cl_int), &index);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &index);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		err = clSetKernelArg(montageKernel, 6, sizeof(cl_int), &inputRowCount);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &outputCopyCount);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		size_t globalWorkSize = outputRowLength;

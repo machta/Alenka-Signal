@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <cassert>
+#include <memory>
 
 using namespace std;
 
@@ -46,9 +47,7 @@ OpenCLProgram::~OpenCLProgram()
 cl_kernel OpenCLProgram::createKernel(const string& kernelName)
 {
 	if (compilationSuccessful() == false)
-	{
 		throw runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");
-	}
 
 	cl_int err;
 
@@ -65,17 +64,13 @@ string OpenCLProgram::getCompilationLog() const
 	cl_int err = clGetProgramBuildInfo(program, context->getCLDevice(), CL_PROGRAM_BUILD_LOG, 0, nullptr, &logLength);
 	checkClErrorCode(err, "clGetProgramBuildInfo()");
 
-	char* tmp = new char[logLength + 1];
+	unique_ptr<char[]> tmp(new char[logLength + 1]);
 	tmp[logLength] = 0;
 
-	err = clGetProgramBuildInfo(program, context->getCLDevice(), CL_PROGRAM_BUILD_LOG, logLength, tmp, nullptr);
+	err = clGetProgramBuildInfo(program, context->getCLDevice(), CL_PROGRAM_BUILD_LOG, logLength, tmp.get(), nullptr);
 	checkClErrorCode(err, "clGetProgramBuildInfo()");
 
-	string str(tmp);
-
-	delete[] tmp;
-
-	return str;
+	return string(tmp.get());
 }
 
 vector<unsigned char>* OpenCLProgram::getBinary()

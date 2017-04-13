@@ -1508,22 +1508,19 @@ Spikedet<T>::~Spikedet()
 {
 	delete filterProcessor;
 
-	cl_int err;
-
-	if (queue != nullptr)
+	if (queue)
 	{
-		err = clReleaseCommandQueue(queue);
+		cl_int err = clReleaseCommandQueue(queue);
 		checkClErrorCode(err, "clReleaseCommandQueue()");
 	}
-
-	if (inBuffer != nullptr)
+	if (inBuffer)
 	{
-		err = clReleaseMemObject(inBuffer);
+		cl_int err = clReleaseMemObject(inBuffer);
 		checkClErrorCode(err, "clReleaseMemObject()");
 	}
-	if (outBuffer != nullptr)
+	if (outBuffer)
 	{
-		err = clReleaseMemObject(outBuffer);
+		cl_int err = clReleaseMemObject(outBuffer);
 		checkClErrorCode(err, "clReleaseMemObject()");
 	}
 }

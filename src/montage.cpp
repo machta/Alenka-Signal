@@ -3,42 +3,59 @@
 #include <AlenkaSignal/openclcontext.h>
 
 #include <regex>
+#include <iostream>
+#include <sstream>
 
 using namespace std;
 
 namespace
 {
 
+// The NAN value makes the signal line disappear, which makes it apparent that the user made a mistake. It caused problems during compilation on some platforms, so I replaced it.
 template<class T>
 string buildSource(const string& source, const string& headerSource)
 {
-	// TODO: add proper indentation
 	string src;
 
 	if (is_same<T, double>::value)
-		src += "#define float double\n";
+		src += "#define float double\n\n";
 
-	src += R"(
-#define PARA __global float* _input_, int _inputRowLength_, int _inputRowOffset_, int _channelsInFile_
-#define PASS _input_, _inputRowLength_, _inputRowOffset_, _channelsInFile_
+	src += R"(#define PARA __global float* _input_, int _inputRowLength_, int _inputRowOffset_, int _inputRowCount_
+#define PASS _input_, _inputRowLength_, _inputRowOffset_, _inputRowCount_
 
 float in(int i, PARA)
 {
-	return 0 <= i && i < _channelsInFile_ ? _input_[_inputRowLength_*i + _inputRowOffset_ + get_global_id(0)] : /*NAN*/0; // The NAN value makes the signal line disappear, which makes it apparent that the user made a mistake. It caused problems during compilation on some platforms, so I replaced it.
+	return 0 <= i && i < _inputRowCount_ ? _input_[_inputRowLength_*i + _inputRowOffset_ + get_global_id(0)] : /*NAN*/0;
 }
-#define in(a_) in(a_, PASS))";
+#define in(a_) in(a_, PASS)
+)";
 
 	src += headerSource;
 
-	src += "\n\n__kernel void montage(__global float* _input_, __global float* _output_, int _inputRowLength_, int _inputRowOffset_, int _outputRowLength_, int _outputRowIndex_, int _channelsInFile_)";
+	src += R"(
 
-	src += "\n{\n\tfloat out = 0;\n\n{\n";
-	src += source;
-	src += "\n}\n\n\t";
+__kernel void montage(__global float* _input_, __global float* _output_, int _inputRowLength_, int _inputRowOffset_, int _inputRowCount_, int _outputRowLength_, int _outputRowIndex_, int _outputCopyCount_)
+{
+	float out = 0;
 
-	src += "_output_[_outputRowLength_*_outputRowIndex_ + get_global_id(0)] = out;\n}\n";
+	{
+)";
 
-	//cerr << src << endl;
+	stringstream ss(source);
+	string line;
+	while (getline(ss, line), ss)
+		src += "\t\t" + line + "\n";
+
+	src += R"(	}
+
+	int outputIndex = _outputCopyCount_*(_outputRowLength_*_outputRowIndex_ + get_global_id(0));
+	for (int i = 0; i < _outputCopyCount_; ++i)
+	{
+		_output_[outputIndex + i] = out;
+	}
+})";
+
+	//cerr << src;
 	return src;
 }
 
@@ -70,9 +87,11 @@ Montage<T>::Montage(const string& source, OpenCLContext* context, const string& 
 template<class T>
 Montage<T>::~Montage()
 {
-	cl_int err;
-	err = clReleaseKernel(kernel);
-	checkClErrorCode(err, "clReleaseKernel()");
+	if (kernel)
+	{
+		cl_int err = clReleaseKernel(kernel);
+		checkClErrorCode(err, "clReleaseKernel()");
+	}
 }
 
 template<class T>
