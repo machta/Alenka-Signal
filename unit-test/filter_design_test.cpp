@@ -31,6 +31,7 @@ template<class T>
 void test(function<void(T, T)> compare, T* answer)
 {
 	int n = 20;
+	cl_int err;
 
 	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
 	FilterProcessor<T> processor(n, 1, &context);
@@ -38,13 +39,18 @@ void test(function<void(T, T)> compare, T* answer)
 	vector<T> signal;
 	vector<T> output(n);
 	for (int i = 1; i <= n; i++)
-	signal.push_back(i);
+		signal.push_back(i);
 
-	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, nullptr);
+	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, &err);
+	checkClErrorCode(err, "clCreateCommandQueue");
 
 	cl_mem_flags flags = CL_MEM_READ_WRITE;
-	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), nullptr);
-	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, nullptr);
+
+	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), &err);
+	checkClErrorCode(err, "clCreateBuffer");
+
+	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, &err);
+	checkClErrorCode(err, "clCreateBuffer");
 
 	Filter<T> filter(8, 200);
 	filter.lowpass(true);
@@ -53,13 +59,18 @@ void test(function<void(T, T)> compare, T* answer)
 
 	processor.process(inBuffer, outBuffer, queue);
 
-	clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*sizeof(T), output.data(), 0, nullptr, nullptr);
+	err = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*sizeof(T), output.data(), 0, nullptr, nullptr);
+	checkClErrorCode(err, "clEnqueueReadBuffer");
 
 	auto res = processor.getCoefficients();
 	for (int i = 0; i < 8; ++i)
-	{
 		compare(res[i], answer[i]);
-	}
+
+	err = clReleaseMemObject(inBuffer);
+	checkClErrorCode(err, "clReleaseMemObject");
+
+	err = clReleaseMemObject(outBuffer);
+	checkClErrorCode(err, "clReleaseMemObject");
 }
 
 } // namespace

@@ -14,16 +14,16 @@ using namespace AlenkaFile;
 namespace
 {
 
+const string PATH = "unit-test/data/";
+const DETECTOR_SETTINGS defaultSettings;
+
 template<class T>
 class DataFileLoader : public SpikedetDataLoader<T>
 {
 public:
 	DataFile* file;
 
-	DataFileLoader(DataFile* file) : file(file)
-	{}
-	virtual ~DataFileLoader() override
-	{}
+	DataFileLoader(DataFile* file) : file(file) {}
 
 	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) override
 	{
@@ -51,8 +51,6 @@ public:
 	{
 		assert(signal.size() == channels*length);
 	}
-	virtual ~VectorLoader() override
-	{}
 
 	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) override
 	{
@@ -134,89 +132,76 @@ void printException(function<void (void)> fun)
 
 } // namespace
 
-class spikedet_test : public ::testing::Test
+TEST(spikedet_test, IED_P001_default_float)
 {
-protected:
-	spikedet_test()
-	{}
-
-	virtual ~spikedet_test()
-	{}
-
-	string path = "unit-test/data/";
-	DETECTOR_SETTINGS defaultSettings;
-};
-
-TEST_F(spikedet_test, IED_P001_default_float)
-{
-	EDF file(path + "IED_P001.edf");
+	EDF file(PATH + "IED_P001.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P002_default_float)
+TEST(spikedet_test, IED_P002_default_float)
 {
-	EDF file(path + "IED_P002.edf");
+	EDF file(PATH + "IED_P002.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P003_default_float)
+TEST(spikedet_test, IED_P003_default_float)
 {
-	EDF file(path + "IED_P003.edf");
+	EDF file(PATH + "IED_P003.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P004_default_float)
+TEST(spikedet_test, IED_P004_default_float)
 {
-	EDF file(path + "IED_P004.edf");
+	EDF file(PATH + "IED_P004.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P005_default_float)
+TEST(spikedet_test, IED_P005_default_float)
 {
-	EDF file(path + "IED_P005.edf");
+	EDF file(PATH + "IED_P005.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P006_default_float)
+TEST(spikedet_test, IED_P006_default_float)
 {
-	EDF file(path + "IED_P006.edf");
+	EDF file(PATH + "IED_P006.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, IED_P007_default_float)
+TEST(spikedet_test, IED_P007_default_float)
 {
-	EDF file(path + "IED_P007.edf");
+	EDF file(PATH + "IED_P007.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
 // TODO: make double version of the above tests
 
-TEST_F(spikedet_test, index_bug)
+TEST(spikedet_test, index_bug)
 {
 	// This tests the bug when computing segment indices.
-	EDF file(path + "edfsample.edf");
+	EDF file(PATH + "edfsample.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, zeroChannel_bug0)
+TEST(spikedet_test, zeroChannel_bug0)
 {
 	// This tests the strange case when you get nan values and it causes an exception.
-	EDF file(path + "zeroChannel.edf");
+	EDF file(PATH + "zeroChannel.edf");
 	DataFileLoader<float> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test<float>(&loader, file.getSamplingFrequency(), defaultSettings); }));
 }
 
-TEST_F(spikedet_test, zeroChannel_bug1)
+TEST(spikedet_test, zeroChannel_bug1)
 {
-	// This test does not appear to be effective, but I will keep it all the same.
+	// This test does not appear to be effective in reproducing the bug, but I will keep it all the same.
 	int len = 100000;
 	vector<float> signal(3*len);
 	for (int i = len; i < 2*len; i++)

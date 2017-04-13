@@ -58,9 +58,6 @@ void testFilter(Filter<T> filter, int M, int channelCount, const vector<T>& data
 		err = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*channelCount*sizeof(T), output.data(), 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueReadBuffer");
 
-		//OpenCLContext::printBuffer("filter_test_input.txt", input.data(), n*channelCount);
-		//OpenCLContext::printBuffer("filter_test_output.txt", output.data(), n*channelCount);
-
 		double maxError = 0;
 		for (int j = 0; j < channelCount; j++)
 		{
@@ -117,5 +114,5 @@ TEST(filter_test, allpass_float)
 
 	Filter<float> filter(200, 200);
 
-	//testFilter(filter, 200, c, data, data);
+	//testFilter(filter, 200, c, data, data); // TODO: Turn this on.
 }
