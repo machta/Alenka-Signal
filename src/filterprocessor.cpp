@@ -170,8 +170,8 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		err = clSetKernelArg(zeroKernel, 0, sizeof(cl_mem), &filterBuffer);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		size_t globalWorkSize = blockLength;
 		size_t globalWorkOffset = M;
+		size_t globalWorkSize = blockLength - globalWorkOffset;
 		err = clEnqueueNDRangeKernel(queue, zeroKernel, 1, &globalWorkOffset, &globalWorkSize, nullptr, 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueNDRangeKernel()");
 //#endif
@@ -265,7 +265,7 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 
 	coefficients.resize(M);
 	for (int i = 0; i < M; i++)
-		coefficients[i] = outArray[i];	
+		coefficients[i] = outArray[i];
 }
 
 template<class T>
