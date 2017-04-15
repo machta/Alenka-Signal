@@ -84,25 +84,25 @@ void test(function<void(FilterProcessor<T>*)> change, function<void(T, T)> compa
 
 } // namespace
 
-TEST(allpass_test, sample_float)
+TEST(filter_allpass_test, sample_float)
 {
 	auto f = [] (FilterProcessor<float>* p) { p->changeSampleFilter(5, vector<float>{1, 1, 1}); };
 	test<float>(f, &compareFloat);
 }
 
-TEST(allpass_test, coefficient_float)
+TEST(filter_allpass_test, coefficient_float)
 {
 	auto f = [] (FilterProcessor<float>* p) { p->changeFilter(vector<float>{0, 0, 1, 0, 0}); };
 	test<float>(f, &compareFloat);
 }
 
-TEST(allpass_test, sample_double)
+TEST(filter_allpass_test, sample_double)
 {
 	auto f = [] (FilterProcessor<double>* p) { p->changeSampleFilter(5, vector<double>{1, 1, 1}); };
 	test<double>(f, &compareDouble);
 }
 
-TEST(allpass_test, coefficient_double)
+TEST(filter_allpass_test, coefficient_double)
 {
 	auto f = [] (FilterProcessor<double>* p) { p->changeFilter(vector<double>{0, 0, 1, 0, 0}); };
 	test<double>(f, &compareDouble);

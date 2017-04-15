@@ -30,47 +30,61 @@ void compareDouble(double a, double b)
 template<class T>
 void test(function<void(T, T)> compare, T* answer)
 {
-	int n = 20;
-	cl_int err;
+	clfftStatus errFFT;
+	clfftSetupData setupData;
 
-	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
-	FilterProcessor<T> processor(n, 1, &context);
+	errFFT = clfftInitSetupData(&setupData);
+	checkClfftErrorCode(errFFT, "clfftInitSetupData()");
 
-	vector<T> signal;
-	vector<T> output(n);
-	for (int i = 1; i <= n; i++)
-		signal.push_back(i);
+	errFFT = clfftSetup(&setupData);
+	checkClfftErrorCode(errFFT, "clfftSetup()");
 
-	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, &err);
-	checkClErrorCode(err, "clCreateCommandQueue");
+	{
+		int n = 20;
+		cl_int err;
 
-	cl_mem_flags flags = CL_MEM_READ_WRITE;
+		OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
+		FilterProcessor<T> processor(n, 1, &context);
 
-	cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), &err);
-	checkClErrorCode(err, "clCreateBuffer");
+		vector<T> signal;
+		vector<T> output(n);
+		for (int i = 1; i <= n; i++)
+			signal.push_back(i);
 
-	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, &err);
-	checkClErrorCode(err, "clCreateBuffer");
+		cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, &err);
+		checkClErrorCode(err, "clCreateCommandQueue");
 
-	Filter<T> filter(8, 200);
-	filter.lowpass(true);
-	filter.setLowpass(50);
-	processor.changeSampleFilter(8, filter.computeSamples());
+		cl_mem_flags flags = CL_MEM_READ_WRITE;
 
-	processor.process(inBuffer, outBuffer, queue);
+		cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), &err);
+		checkClErrorCode(err, "clCreateBuffer");
 
-	err = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*sizeof(T), output.data(), 0, nullptr, nullptr);
-	checkClErrorCode(err, "clEnqueueReadBuffer");
+		cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, &err);
+		checkClErrorCode(err, "clCreateBuffer");
 
-	auto res = processor.getCoefficients();
-	for (int i = 0; i < 8; ++i)
-		compare(res[i], answer[i]);
+		Filter<T> filter(8, 200);
+		filter.lowpass(true);
+		filter.setLowpass(50);
+		processor.changeSampleFilter(8, filter.computeSamples());
 
-	err = clReleaseMemObject(inBuffer);
-	checkClErrorCode(err, "clReleaseMemObject");
+		processor.process(inBuffer, outBuffer, queue);
 
-	err = clReleaseMemObject(outBuffer);
-	checkClErrorCode(err, "clReleaseMemObject");
+		err = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, n*sizeof(T), output.data(), 0, nullptr, nullptr);
+		checkClErrorCode(err, "clEnqueueReadBuffer");
+
+		auto res = processor.getCoefficients();
+		for (int i = 0; i < 8; ++i)
+			compare(res[i], answer[i]);
+
+		err = clReleaseMemObject(inBuffer);
+		checkClErrorCode(err, "clReleaseMemObject");
+
+		err = clReleaseMemObject(outBuffer);
+		checkClErrorCode(err, "clReleaseMemObject");
+	}
+
+	errFFT = clfftTeardown();
+	checkClfftErrorCode(errFFT, "clfftTeardown()");
 }
 
 } // namespace

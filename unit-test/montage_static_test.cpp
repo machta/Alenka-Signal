@@ -63,12 +63,12 @@ TEST(montage_static_test, test_double)
 	test<double>();
 }
 
-TEST(montage_static_test, stripComments_float)
+TEST(montage_static_test, strip_comments_float)
 {
 	stripComments<float>();
 }
 
-TEST(montage_static_test, stripComments_double)
+TEST(montage_static_test, strip_comments_double)
 {
 	stripComments<double>();
 }
