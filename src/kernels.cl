@@ -1,5 +1,3 @@
-R"(
-
 /**
  * @brief Source code for the kernel fuctions used by FilterProcessor.
  *
@@ -9,6 +7,8 @@ R"(
  * @file
  * @include kernels.cl
  */
+
+const char* KERNELS_SOURCE = R"(
 
 // Multiplies two complex numbers.
 inline float2 complexMultiply(float2 a, float2 b)
@@ -36,4 +36,4 @@ __kernel void zero(__global float* a)
 	a[id0] = 0;
 }
 
-)"
+)";

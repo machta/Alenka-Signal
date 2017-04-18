@@ -1,4 +1,4 @@
-#include <AlenkaSignal/openclprogram.h>
+#include "../include/AlenkaSignal/openclprogram.h"
 
 #include <AlenkaSignal/openclcontext.h>
 

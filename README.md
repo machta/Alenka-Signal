@@ -2,13 +2,15 @@
 
 ### Requirments
 * git
-* cmake (for Ubuntu 14 download the latest version)
-* OpenCL (If you don't have the hardware for this, use AMD APP SDK for a CPU implementation of OpenCL.)
+* cmake 3.1+ (for Ubuntu 14 download the latest version)
 * g++ or Microsoft Visual C++ compiler
+* OpenCL 1.1
 
 On Debian-like systems you can use: `sudo apt install git cmake-gui build-essential`
 
 MSVC compiler can be acquired by installing Visual C++ Build Tools 2015. Choose Custom installation, and uncheck all options but "Windows 8.1 SDK". If you already have Visual Studio, you don't need to install this.
+
+If your device doesn't support OpenCL (e.g. when running a Linux guest in VirtualBox), use AMD APP SDK for a CPU implementation of OpenCL.
 
 ### Build instructions
 1. Clone this repo

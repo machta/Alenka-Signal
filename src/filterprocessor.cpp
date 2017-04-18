@@ -1,7 +1,8 @@
-#include <AlenkaSignal/filterprocessor.h>
+#include "../include/AlenkaSignal/filterprocessor.h"
 
-#include <AlenkaSignal/openclcontext.h>
-#include <AlenkaSignal/openclprogram.h>
+#include "../include/AlenkaSignal/openclcontext.h"
+#include "../include/AlenkaSignal/openclprogram.h"
+
 #include <fasttransforms.h>
 
 #include <cmath>
@@ -13,9 +14,8 @@ using namespace std;
 namespace
 {
 
-const char* kernels =
+// Defines const char* KERNELS_SOURCE.
 #include "kernels.cl"
-;
 
 template<class T>
 T hammingWindow(int n, int M)
@@ -54,19 +54,13 @@ FilterProcessor<T>::FilterProcessor(unsigned int blockLength, unsigned int chann
 		kernelsSource = "#define float double\n#define float2 double2\n\n";
 	}
 
-	kernelsSource += kernels;
+	kernelsSource += KERNELS_SOURCE;
 	OpenCLProgram program(kernelsSource, context);
 
 	filterKernel = program.createKernel("filter");
 	zeroKernel = program.createKernel("zero");
 
 	cl_mem_flags flags = CL_MEM_READ_WRITE;
-#ifdef NDEBUG
-#if CL_1_2
-	flags |= CL_MEM_HOST_WRITE_ONLY;
-#endif
-#endif
-
 	filterBuffer = clCreateBuffer(context->getCLContext(), flags, (blockLength + 2)*sizeof(T), nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
@@ -161,12 +155,6 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 
 		//printBuffer("before_filterBuffer.txt", filterBuffer, queue);
 
-		// This section is disabled because of a bug in the implementation of clEnqueueFillBuffer().
-//#if CL_1_2
-//		float zero = 0;
-//		err = clEnqueueFillBuffer(queue, filterBuffer, &zero, sizeof(zero), 0, width + 2, 0, nullptr, nullptr);
-//		checkClErrorCode(err, "clEnqueueFillBuffer()");
-//#else
 		err = clSetKernelArg(zeroKernel, 0, sizeof(cl_mem), &filterBuffer);
 		checkClErrorCode(err, "clSetKernelArg()");
 
@@ -174,7 +162,6 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		size_t globalWorkSize = blockLength - globalWorkOffset;
 		err = clEnqueueNDRangeKernel(queue, zeroKernel, 1, &globalWorkOffset, &globalWorkSize, nullptr, 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueNDRangeKernel()");
-//#endif
 
 		//printBuffer("after_filterBuffer_zero.txt", filterBuffer, queue);
 
@@ -183,8 +170,6 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 
 		//printBuffer("after_filterBuffer.txt", filterBuffer, queue);
 	}
-
-	// TODO: apply a window function (on the device)
 
 	//OpenCLContext::printBuffer("before_fft.txt", inBuffer, queue);
 
@@ -271,6 +256,7 @@ void FilterProcessor<T>::changeSampleFilter(int M, const std::vector<T>& samples
 template<class T>
 void FilterProcessor<T>::applyWindow(WindowFunction windowFunction)
 {
+	// TODO: Perhaps apply the window function on the GPU as an optimization.
 	assert(static_cast<int>(coefficients.size()) == M);
 	coefficientsChanged = true;
 

@@ -1,7 +1,7 @@
 #ifndef ALENKASIGNAL_MONTAGE_H
 #define ALENKASIGNAL_MONTAGE_H
 
-#include <AlenkaSignal/openclprogram.h>
+#include "openclprogram.h"
 
 #include <CL/cl_gl.h>
 

@@ -1,7 +1,7 @@
-#include <AlenkaSignal/montageprocessor.h>
+#include "../include/AlenkaSignal/montageprocessor.h"
 
-#include <AlenkaSignal/openclcontext.h>
-#include <AlenkaSignal/montage.h>
+#include "../include/AlenkaSignal/openclcontext.h"
+#include "../include/AlenkaSignal/montage.h"
 
 using namespace std;
 

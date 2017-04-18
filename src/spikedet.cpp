@@ -1,11 +1,12 @@
-#include <AlenkaSignal/spikedet.h>
+#include "../include/AlenkaSignal/spikedet.h"
 
-#include <AlenkaSignal/openclcontext.h>
-#include <AlenkaSignal/filter.h>
-#include <AlenkaSignal/filterprocessor.h>
+#include "../include/AlenkaSignal/openclcontext.h"
+#include "../include/AlenkaSignal/filter.h"
+#include "../include/AlenkaSignal/filterprocessor.h"
 
 #include "interpolation.h"
 #include "fasttransforms.h"
+#include <Eigen/Dense>
 
 #include <climits>
 #include <algorithm>
@@ -13,7 +14,6 @@
 #include <numeric>
 #include <iostream>
 
-#include <Eigen/Dense>
 using namespace std;
 using namespace AlenkaSignal;
 

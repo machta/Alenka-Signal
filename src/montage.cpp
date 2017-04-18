@@ -1,6 +1,6 @@
-#include <AlenkaSignal/montage.h>
+#include "../include/AlenkaSignal/montage.h"
 
-#include <AlenkaSignal/openclcontext.h>
+#include "../include/AlenkaSignal/openclcontext.h"
 
 #include <regex>
 #include <iostream>

@@ -1,9 +1,3 @@
-/**
- * @brief The header with the OpenCLContext class definition.
- *
- * @file
- */
-
 #ifndef ALENKASIGNAL_OPENCLCONTEXT_H
 #define ALENKASIGNAL_OPENCLCONTEXT_H
 
@@ -87,21 +81,6 @@ public:
 	 * clGetDeviceInfo() is used to retrieve this info.
 	 */
 	std::string getDeviceInfo() const;
-
-	/**
-	 * @brief A convenience function for using a barrier.
-	 */
-	static void enqueueBarrier(cl_command_queue commandQueue, cl_event event)
-	{
-		cl_int err;
-#if CL_1_2
-		err = clEnqueueBarrierWithWaitList(commandQueue, 1, &event, nullptr);
-		checkClErrorCode(err, "clEnqueueBarrierWithWaitList()");
-#else
-		err = clEnqueueWaitForEvents(commandQueue, 1, &event);
-		checkClErrorCode(err, "clEnqueueWaitForEvents()");
-#endif
-	}
 
 	static void CCEC(cl_int val, std::string message, const char* file, int line);
 	static void CFCEC(clfftStatus val, std::string message, const char* file, int line);
