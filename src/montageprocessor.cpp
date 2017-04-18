@@ -12,6 +12,19 @@ template<class T>
 void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue, int inputRowOffset)
 {
 	cl_int err;
+	size_t inSize, outSize;
+
+	err = clGetMemObjectInfo(inBuffer, CL_MEM_SIZE, sizeof(size_t), &inSize, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
+
+	if (inSize < inputRowLength*inputRowCount*sizeof(T))
+		throw runtime_error("The inBuffer is too small.");
+
+	err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
+
+	if (outSize < outputRowLength*montage.size()*outputCopyCount*sizeof(T))
+		throw runtime_error("The outBuffer is too small.");
 
 	for (unsigned int i = 0; i < montage.size(); i++)
 	{

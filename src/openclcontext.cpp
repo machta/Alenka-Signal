@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <memory>
 
 using namespace std;
 
@@ -286,7 +287,7 @@ string OpenCLContext::getDeviceInfo() const
 
 	// Build the string.
 	string str;
-	char* tmp = new char[maxSize];
+	unique_ptr<char[]> tmp(new char[maxSize]);
 
 	str += "Available devices (" + to_string(deviceCount) + "):";
 	for (cl_uint i = 0; i < deviceCount; ++i)
@@ -296,41 +297,39 @@ string OpenCLContext::getDeviceInfo() const
 		else
 			str += "\n   ";
 
-		err = clGetDeviceInfo(deviceIDs[i], CL_DEVICE_NAME, maxSize, tmp, nullptr);
+		err = clGetDeviceInfo(deviceIDs[i], CL_DEVICE_NAME, maxSize, tmp.get(), nullptr);
 		checkClErrorCode(err, "clGetDeviceInfo()");
-		str += tmp;
+		str += tmp.get();
 	}
 
 	str += "\n\nSelected device: ";
-	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_NAME, maxSize, tmp, nullptr);
+	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_NAME, maxSize, tmp.get(), nullptr);
 	checkClErrorCode(err, "clGetDeviceInfo()");
-	str += tmp;
+	str += tmp.get();
 
 	str += "\nVersion: ";
-	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_VERSION, maxSize, tmp, nullptr);
+	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_VERSION, maxSize, tmp.get(), nullptr);
 	checkClErrorCode(err, "clGetDeviceInfo()");
-	str += tmp;
+	str += tmp.get();
 
 	str += "\nVendor: ";
-	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_VENDOR, maxSize, tmp, nullptr);
+	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_VENDOR, maxSize, tmp.get(), nullptr);
 	checkClErrorCode(err, "clGetDeviceInfo()");
-	str += tmp;
+	str += tmp.get();
 
 	str += "\nExtensions: ";
-	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_EXTENSIONS, maxSize, tmp, nullptr);
+	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_EXTENSIONS, maxSize, tmp.get(), nullptr);
 	checkClErrorCode(err, "clGetDeviceInfo()");
-	str += tmp;
+	str += tmp.get();
 
-	str += "\nGlobal memory size: ";
+	str += "\nDevice global memory size: ";
 	cl_ulong memSize;
 	err = clGetDeviceInfo(getCLDevice(), CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &memSize, nullptr);
 	checkClErrorCode(err, "clGetDeviceInfo()");
 	stringstream ss;
 	double memGigs = memSize/(1000.*1000*1000);
-	ss << memGigs << " GB";
+	ss << memGigs << " GB (this equals the GPU memory size iff the sected CL device is the GPU)";
 	str += ss.str();
-
-	delete[] tmp;
 
 	return str;
 }

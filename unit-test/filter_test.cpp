@@ -47,10 +47,10 @@ void testFilter(Filter<T> filter, int M, int channelCount, const vector<T>& data
 
 		cl_mem_flags flags = CL_MEM_READ_WRITE;
 
-		cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*channelCount*sizeof(T), input.data(), &err);
+		cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 2)*channelCount*sizeof(T), input.data(), &err);
 		checkClErrorCode(err, "clCreateBuffer");
 
-		cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*channelCount*sizeof(T), nullptr, &err);
+		cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 2)*channelCount*sizeof(T), nullptr, &err);
 		checkClErrorCode(err, "clCreateBuffer");
 
 		processor.process(inBuffer, outBuffer, queue);

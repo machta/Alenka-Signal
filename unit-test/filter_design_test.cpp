@@ -56,10 +56,10 @@ void test(function<void(T, T)> compare, T* answer)
 
 		cl_mem_flags flags = CL_MEM_READ_WRITE;
 
-		cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 4)*sizeof(T), signal.data(), &err);
+		cl_mem inBuffer = clCreateBuffer(context.getCLContext(), flags | CL_MEM_COPY_HOST_PTR, (n + 2)*sizeof(T), signal.data(), &err);
 		checkClErrorCode(err, "clCreateBuffer");
 
-		cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 4)*sizeof(T), nullptr, &err);
+		cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, (n + 2)*sizeof(T), nullptr, &err);
 		checkClErrorCode(err, "clCreateBuffer");
 
 		Filter<T> filter(8, 200);

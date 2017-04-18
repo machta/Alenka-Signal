@@ -22,11 +22,11 @@ __kernel void filter(__global float2* a, __global float2* b)
 {
 	int id0 = get_global_id(0);
 	int id1 = get_global_id(1);
-	int size1 = get_global_size(1);
+	int size0 = get_global_size(0);
 
-	int id = id0*size1 + id1;
+	int id = id1*size0 + id0;
 
-	a[id] = complexMultiply(a[id], b[id1]);
+	a[id] = complexMultiply(a[id], b[id0]);
 }
 
 // Assigns zero to all elements.

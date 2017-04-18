@@ -127,26 +127,32 @@ FilterProcessor<T>::~FilterProcessor()
 	checkClfftErrorCode(errFFT, "clfftDestroyPlan()");
 }
 
+// This version preserves input. TODO: Make another "destructive" version that uses outBuffer as a temporary buffer
+// and copies the result back to inBuffer. This new vesion could then be used with multiple parallel queues at once.
+// This would also require to handle filterBuffer differently: it must be updated before process is used
+// and not wait until it is used for the first time. Then it could be too late as, while it is updating,
+// another parallel queue will already need the buffer.
+
 template<class T>
 void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue)
 {
+	assert(inBuffer != outBuffer);
+
 	cl_int err;
 	clfftStatus errFFT;
+	size_t inSize, outSize, minSize = (blockLength + 2)*blockChannels*sizeof(T);
 
-#ifndef NDEBUG
-	{
-		size_t inSize;
-		err = clGetMemObjectInfo(inBuffer, CL_MEM_SIZE, sizeof(size_t), &inSize, nullptr);
-		checkClErrorCode(err, "clGetMemObjectInfo");
+	err = clGetMemObjectInfo(inBuffer, CL_MEM_SIZE, sizeof(size_t), &inSize, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
 
-		size_t outSize;
-		err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
-		checkClErrorCode(err, "clGetMemObjectInfo");
+	if (inSize < minSize)
+		throw runtime_error("The inBuffer is too small.");
 
-		assert(inSize >= (blockLength + 2)*blockChannels*sizeof(T) && "The inBuffer is too small.");
-		assert(outSize >= (blockLength + 2)*blockChannels*sizeof(T) && "The inBuffer is too small.");
-	}
-#endif
+	err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
+	checkClErrorCode(err, "clGetMemObjectInfo");
+
+	if (outSize < minSize)
+		throw runtime_error("The outBuffer is too small.");
 
 	if (coefficientsChanged)
 	{
@@ -159,7 +165,7 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		size_t globalWorkOffset = M;
-		size_t globalWorkSize = blockLength - globalWorkOffset;
+		size_t globalWorkSize = blockLength + 2 - globalWorkOffset;
 		err = clEnqueueNDRangeKernel(queue, zeroKernel, 1, &globalWorkOffset, &globalWorkSize, nullptr, 0, nullptr, nullptr);
 		checkClErrorCode(err, "clEnqueueNDRangeKernel()");
 
@@ -186,7 +192,7 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 	err = clSetKernelArg(filterKernel, 1, sizeof(cl_mem), &filterBuffer);
 	checkClErrorCode(err, "clSetKernelArg()");
 
-	size_t globalWorkSize[2] = {blockChannels, blockLength/2/* + 1*/}; // TODO: Figure out whether there should be the +1.
+	size_t globalWorkSize[2] = {blockLength/2 + 1, blockChannels};
 
 	err = clEnqueueNDRangeKernel(queue, filterKernel, 2, nullptr, globalWorkSize, nullptr, 0, nullptr, nullptr);
 	checkClErrorCode(err, "clEnqueueNDRangeKernel()");
