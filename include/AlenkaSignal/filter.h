@@ -26,6 +26,10 @@ namespace AlenkaSignal
 template<class T>
 class Filter
 {
+	unsigned int M;
+	double Fs, m_lowpass, m_highpass, m_notch, notchWidth;
+	bool m_notchOn = false, m_lowpassOn = false, m_highpassOn = false;
+
 public:
 	/**
 	 * @brief Filter constructor.
@@ -40,61 +44,22 @@ public:
 	 */
 	std::vector<T> computeSamples();
 
-	void lowpass(bool on)
-	{
-		lowpassOn = on;
-	}
-	bool lowpass()
-	{
-		return lowpassOn;
-	}
-	double getLowpass() const
-	{
-		return lowpassF*Fs/2;
-	}
-	void setLowpass(double value)
-	{
-		lowpassF = value/Fs*2;
-	}
+	bool isAllpass() { return !(m_lowpassOn || m_highpassOn || m_notchOn); }
 
-	void highpass(bool on)
-	{
-		highpassOn = on;
-	}
-	bool highpass()
-	{
-		return highpassOn;
-	}
-	double getHighpass() const
-	{
-		return highpassF*Fs/2;
-	}
-	void setHighpass(double value)
-	{
-		highpassF = value/Fs*2;
-	}
+	bool lowpassOn() const { return m_lowpassOn; }
+	void setLowpassOn(bool on) { m_lowpassOn = on; }
+	double lowpass() const { return m_lowpass*Fs/2; }
+	void setLowpass(double value) { m_lowpass = value/Fs*2; }
 
-	void notch(bool on)
-	{
-		notchOn = on;
-	}
-	bool notch()
-	{
-		return notchOn;
-	}
-	double getNotch() const
-	{
-		return notchF;
-	}
-	void setNotch(double value)
-	{
-		notchF = value/Fs*2;
-	}
+	bool highpassOn() const { return m_highpassOn; }
+	void setHighpassOn(bool on) { m_highpassOn = on; }
+	double highpass() const { return m_highpass*Fs/2; }
+	void setHighpass(double value) { m_highpass = value/Fs*2; }
 
-private:
-	unsigned int M;
-	double Fs, lowpassF, highpassF, notchF, notchWidth;
-	bool notchOn = false, lowpassOn = false, highpassOn = false;
+	bool notchOn() const { return m_notchOn; }
+	void setNotchOn(bool on) { m_notchOn = on; }
+	double notch() const { return m_notch; }
+	void setNotch(double value) { m_notch = value/Fs*2; }
 };
 
 } // namespace AlenkaSignal

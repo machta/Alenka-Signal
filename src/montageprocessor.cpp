@@ -9,7 +9,7 @@ namespace AlenkaSignal
 {
 
 template<class T>
-void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue, int inputRowOffset)
+void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inBuffer, cl_mem outBuffer, cl_command_queue queue, cl_int outputRowLength, cl_int inputRowOffset)
 {
 	cl_int err;
 	size_t inSize, outSize;
@@ -18,13 +18,13 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 	checkClErrorCode(err, "clGetMemObjectInfo");
 
 	if (inSize < inputRowLength*inputRowCount*sizeof(T))
-		throw runtime_error("The inBuffer is too small.");
+		throw runtime_error("MontageProcessor: the inBuffer is too small.");
 
 	err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
 	checkClErrorCode(err, "clGetMemObjectInfo");
 
 	if (outSize < outputRowLength*montage.size()*outputCopyCount*sizeof(T))
-		throw runtime_error("The outBuffer is too small.");
+		throw runtime_error("MontageProcessor: the outBuffer is too small.");
 
 	for (unsigned int i = 0; i < montage.size(); i++)
 	{
@@ -40,8 +40,7 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &inputRowLength);
 		checkClErrorCode(err, "clSetKernelArg()");
 
-		cl_int offset = inputRowOffset;
-		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &offset);
+		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &inputRowOffset);
 		checkClErrorCode(err, "clSetKernelArg()");
 
 		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &inputRowCount);

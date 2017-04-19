@@ -43,7 +43,7 @@ void test(function<void(T, T)> compare, int outputCopies)
 	cl_int err;
 
 	OpenCLContext context(OPENCL_PLATFORM, OPENCL_DEVICE);
-	MontageProcessor<T> processor(n, n - offset, inChannels, outputCopies);
+	MontageProcessor<T> processor(n, inChannels, outputCopies);
 
 	cl_command_queue queue = clCreateCommandQueue(context.getCLContext(), context.getCLDevice(), 0, &err);
 	checkClErrorCode(err, "clCreateCommandQueue");
@@ -86,7 +86,7 @@ void test(function<void(T, T)> compare, int outputCopies)
 	cl_mem outBuffer = clCreateBuffer(context.getCLContext(), flags, outBufferSize, nullptr, &err);
 	checkClErrorCode(err, "clCreateBuffer");
 
-	processor.process(montage, inBuffer, outBuffer, queue);
+	processor.process(montage, inBuffer, outBuffer, queue, n - offset);
 
 	err = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, outBufferSize, output.data(), 0, nullptr, nullptr);
 	checkClErrorCode(err, "clEnqueueReadBuffer");

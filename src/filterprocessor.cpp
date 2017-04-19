@@ -146,13 +146,13 @@ void FilterProcessor<T>::process(cl_mem inBuffer, cl_mem outBuffer, cl_command_q
 	checkClErrorCode(err, "clGetMemObjectInfo");
 
 	if (inSize < minSize)
-		throw runtime_error("The inBuffer is too small.");
+		throw runtime_error("FilterProcessor: the inBuffer is too small.");
 
 	err = clGetMemObjectInfo(outBuffer, CL_MEM_SIZE, sizeof(size_t), &outSize, nullptr);
 	checkClErrorCode(err, "clGetMemObjectInfo");
 
 	if (outSize < minSize)
-		throw runtime_error("The outBuffer is too small.");
+		throw runtime_error("FilterProcessor: the outBuffer is too small.");
 
 	if (coefficientsChanged)
 	{

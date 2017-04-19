@@ -1478,7 +1478,7 @@ Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, Open
 		Filter<T> filter(M, fs);
 		//filter.notch(true);
 		//filter.highpass(true);
-		filter.lowpass(true);
+		filter.setLowpassOn(true);
 
 		//filter.setNotch(settings.m_main_hum_freq);
 		//filter.setHighpass(settings.m_band_low);

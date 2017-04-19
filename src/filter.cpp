@@ -20,18 +20,18 @@ vector<T> Filter<T>::computeSamples()
 		double f = 2.*i/M;
 		double val = 1;
 
-		if (lowpassOn && f >= lowpassF - 2/Fs*2)
+		if (m_lowpassOn && f >= m_lowpass - 2/Fs*2)
 		{
 			val = 0;
 		}
-		else if (highpassOn && f <= highpassF + 1/Fs*2)
+		else if (m_highpassOn && f <= m_highpass + 1/Fs*2)
 		{
 			val = 0;
 		}
-		else if (notchOn)
+		else if (m_notchOn)
 		{
-			double tmp = round(f/notchF);
-			tmp = fabs(f - tmp*notchF);
+			double tmp = round(f/m_notch);
+			tmp = fabs(f - tmp*m_notch);
 			if (tmp <= notchWidth/M*Fs/M)
 			{
 				val = 0;

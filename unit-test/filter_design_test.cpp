@@ -63,7 +63,7 @@ void test(function<void(T, T)> compare, T* answer)
 		checkClErrorCode(err, "clCreateBuffer");
 
 		Filter<T> filter(8, 200);
-		filter.lowpass(true);
+		filter.setLowpassOn(true);
 		filter.setLowpass(50);
 		processor.changeSampleFilter(8, filter.computeSamples());
 
