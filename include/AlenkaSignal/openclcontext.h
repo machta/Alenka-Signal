@@ -30,6 +30,10 @@ namespace AlenkaSignal
  */
 class OpenCLContext
 {
+	cl_context context;
+	cl_platform_id platformId;
+	cl_device_id deviceId;
+
 public:
 	/**
 	 * @brief OpenCLContext constructor.
@@ -117,11 +121,6 @@ public:
 	static void printBufferDouble(FILE* file, cl_mem buffer, cl_command_queue queue);
 	static void printBufferDouble(const std::string& filePath, double* data, int n);
 	static void printBufferDouble(const std::string& filePath, cl_mem buffer, cl_command_queue queue);
-
-private:
-	cl_context context;
-	cl_platform_id platformId;
-	cl_device_id deviceId;
 };
 
 } // namespace AlenkaSignal

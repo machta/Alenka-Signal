@@ -18,6 +18,10 @@ class OpenCLContext;
  */
 class OpenCLProgram
 {
+	cl_program program;
+	bool invalid;
+	OpenCLContext* context;
+
 public:
 	/**
 	 * @brief OpenCLProgram constructor.
@@ -53,10 +57,6 @@ public:
 	std::vector<unsigned char>* getBinary();
 
 private:
-	cl_program program;
-	bool invalid;
-	OpenCLContext* context;
-
 	void build();
 };
 

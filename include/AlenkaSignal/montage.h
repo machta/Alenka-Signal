@@ -26,6 +26,9 @@ namespace AlenkaSignal
 template<class T>
 class Montage
 {
+	OpenCLProgram program;
+	cl_kernel kernel = nullptr;
+
 public:
 	/**
 	 * @brief Montage constructor.
@@ -62,10 +65,6 @@ public:
 	 * @brief Removes single line and block comments from OpenCL code.
 	 */
 	static std::string stripComments(const std::string& code);
-
-private:
-	OpenCLProgram program;
-	cl_kernel kernel = nullptr;
 };
 
 } // namespace AlenkaSignal

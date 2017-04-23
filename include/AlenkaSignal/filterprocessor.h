@@ -22,6 +22,19 @@ enum class WindowFunction
 template<class T>
 class FilterProcessor
 {
+	unsigned int blockLength, blockChannels;
+	int M;
+	bool coefficientsChanged = false;
+	std::vector<T> coefficients;
+
+	cl_kernel filterKernel;
+	cl_kernel zeroKernel;
+	cl_mem filterBuffer;
+
+	clfftPlanHandle fftPlan;
+	clfftPlanHandle fftPlanBatch;
+	clfftPlanHandle ifftPlanBatch;
+
 public:
 	FilterProcessor(unsigned int blockLength, unsigned int blockChannels, OpenCLContext* context);
 	~FilterProcessor();
@@ -50,22 +63,6 @@ public:
 	{
 		return coefficients;
 	}
-
-private:
-	unsigned int blockLength;
-	unsigned int blockChannels;
-
-	int M;
-	bool coefficientsChanged = false;
-	std::vector<T> coefficients;
-
-	cl_kernel filterKernel;
-	cl_kernel zeroKernel;
-	cl_mem filterBuffer;
-
-	clfftPlanHandle fftPlan;
-	clfftPlanHandle fftPlanBatch;
-	clfftPlanHandle ifftPlanBatch;
 };
 
 } // namespace AlenkaSignal

@@ -37,11 +37,7 @@ typedef struct bandwidth
 	 * @param bl lower limit filtering
 	 * @param bh upper limit filtering
 	 */
-	bandwidth(const int& bl, const int& bh)
-	    : m_bandLow(bl), m_bandHigh(bh)
-	{
-		/* empty */
-	}
+	bandwidth(const int& bl, const int& bh) : m_bandLow(bl), m_bandHigh(bh) {}
 
 	/// Lower limit of filtering.
 	int m_bandLow;
@@ -163,25 +159,37 @@ typedef struct detectorSettings
 	int    m_decimation = 200;             // -dec
 
 	/// A constructor
-	detectorSettings()
-	{}
-
+	detectorSettings() {}
 	detectorSettings(int band_low, int band_high, double k1, double k2, double k3, int winsize, double noverlap, int buffering, int main_hum_freq,
-	    double discharge_tol, double polyspike_union_time, int decimation)
-	    : m_band_low(band_low), m_band_high(band_high), m_k1(k1), m_k2(k2), m_k3(k3), m_winsize(winsize), m_noverlap(noverlap), m_buffering(buffering),
-	    m_main_hum_freq(main_hum_freq), m_discharge_tol(discharge_tol), m_polyspike_union_time(polyspike_union_time), m_decimation(decimation)
-	{
-		/* empty */
-	}
-
+		double discharge_tol, double polyspike_union_time, int decimation)
+		: m_band_low(band_low), m_band_high(band_high), m_k1(k1), m_k2(k2), m_k3(k3), m_winsize(winsize), m_noverlap(noverlap), m_buffering(buffering),
+		m_main_hum_freq(main_hum_freq), m_discharge_tol(discharge_tol), m_polyspike_union_time(polyspike_union_time), m_decimation(decimation) {}
 } DETECTOR_SETTINGS;
 
 template<class T>
 class Spikedet
 {
+	int fs;
+	int channelCount;
+	FilterProcessor<T>* filterProcessor = nullptr;
+	int decimationF;
+	cl_command_queue queue = nullptr;
+	cl_mem inBuffer = nullptr, outBuffer = nullptr;
+	std::vector<T> segmentBuffer, stepBuffer;
+	int progressComplete;
+	std::atomic<int> progressCurrent;
+	std::atomic<bool> cancelComputation;
+
+	DETECTOR_SETTINGS settings;
+	OpenCLContext* context;
+	DETECTOR_SETTINGS* m_settings = &settings;
+	/// output object - structure out
+	CDetectorOutput*   m_out;
+	/// output object - strucutre discharges
+	CDischarges*       m_discharges;
+
 public:
 	Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context);
-
 	~Spikedet();
 
 	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges);
@@ -209,30 +217,12 @@ public:
 	}
 
 private:
-	int fs;
-	int channelCount;
-	DETECTOR_SETTINGS settings;
-	OpenCLContext* context;
-	DETECTOR_SETTINGS* m_settings = &settings;
-	/// output object - structure out
-	CDetectorOutput*   m_out;
-	/// output object - strucutre discharges
-	CDischarges*       m_discharges;
-
 	void getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize);
 
 	void spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
 	                   CDetectorOutput*& out, CDischarges*& discharges);
 
 	std::vector<T>* prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop);
-	FilterProcessor<T>* filterProcessor = nullptr;
-	int decimationF;
-	cl_command_queue queue = nullptr;
-	cl_mem inBuffer = nullptr, outBuffer = nullptr;
-	std::vector<T> segmentBuffer, stepBuffer;
-	int progressComplete;
-	std::atomic<int> progressCurrent;
-	std::atomic<bool> cancelComputation;
 };
 
 } // namespace AlenkaSignal

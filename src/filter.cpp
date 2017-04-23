@@ -12,8 +12,6 @@ vector<T> Filter<T>::computeSamples()
 {
 	vector<T> samples((M + 1)/2);
 
-	//int cM = 1 + M/2;
-
 	// Initialize samples with the values of Hr.
 	for (unsigned int i = 0; i < samples.size(); ++i)
 	{
@@ -31,15 +29,18 @@ vector<T> Filter<T>::computeSamples()
 		else if (m_notchOn)
 		{
 			double tmp = round(f/m_notch);
-			tmp = fabs(f - tmp*m_notch);
-			if (tmp <= notchWidth/M*Fs/M)
+
+			if (0 < tmp) // This is to skip the notch at 0 Hz.
 			{
-				val = 0;
+				tmp = fabs(f - tmp*m_notch);
+				if (tmp <= notchWidth/M*Fs/M)
+				{
+					val = 0;
+				}
 			}
 		}
 
-		samples[/*2**/i] = val;
-		//samples[2*i + 1] = 0;
+		samples[i] = val;
 	}
 
 	return samples;

@@ -761,10 +761,6 @@ private:
 	 */
 	void findStartEndCrossing(wxVector<int> point[2], const wxVector<bool>* marker1);
 
-// variables
-public:
-	/* none */
-
 private:
 	/// input data
 	const wxVector<SIGNALTYPE>* m_data;
