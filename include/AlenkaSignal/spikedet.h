@@ -3,14 +3,8 @@
 
 #include <CL/cl_gl.h>
 
-#include <cstdio>
-#include <cmath>
 #include <vector>
 #include <atomic>
-
-#define wxVector std::vector
-
-#define SIGNALTYPE float
 
 namespace AlenkaSignal
 {
@@ -77,20 +71,20 @@ public:
 	 * Erase records at positions.
 	 * @param pos position of records to erase.
 	 */
-	void Remove(const wxVector<int>& pos);
+	void Remove(const std::vector<int>& pos);
 
 	/// spike position (second)
-	wxVector<double>  m_pos;
+	std::vector<double>  m_pos;
 	/// channel
-	wxVector<int>     m_chan;
+	std::vector<int>     m_chan;
 	/// spike duration (second) - fix value 5 ms
-	wxVector<double>  m_dur;
+	std::vector<double>  m_dur;
 	/// spike condition (1-obvious 0.5-ambiguous)
-	wxVector<double>  m_con;
+	std::vector<double>  m_con;
 	/// statistical significance "CDF"
-	wxVector<double>  m_weight;
+	std::vector<double>  m_weight;
 	/// statistical significance "PDF"
-	wxVector<double>  m_pdf;
+	std::vector<double>  m_pdf;
 };
 
 /**
@@ -114,7 +108,7 @@ public:
 	 * Erase records at positions.
 	 * @param pos positions of record to erase.
 	 */
-	void Remove(const wxVector<int>& pos);
+	void Remove(const std::vector<int>& pos);
 
 	/**
 	 *	Return count channels.
@@ -217,7 +211,7 @@ public:
 	}
 
 private:
-	void getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize);
+	void getIndexStartStop(std::vector<int64_t>& indexStart, std::vector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize);
 
 	void spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
 	                   CDetectorOutput*& out, CDischarges*& discharges);

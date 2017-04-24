@@ -8,6 +8,8 @@
 #include "fasttransforms.h"
 #include <Eigen/Dense>
 
+#include <cmath>
+#include <cstdio>
 #include <climits>
 #include <algorithm>
 #include <complex>
@@ -24,7 +26,8 @@ namespace CDSP
 {
 
 /// Calculation of the absolute values of the Hilbert transform
-void AbsHilbert(wxVector<SIGNALTYPE>& data)
+template<class T>
+void AbsHilbert(vector<T>& data)
 {
 	int i, sizeInput;
 	alglib::complex_1d_array in;
@@ -43,7 +46,7 @@ void AbsHilbert(wxVector<SIGNALTYPE>& data)
 	alglib::fftc1d(in);
 
 	// H
-	wxVector<int> h(data.size(), 0);
+	vector<int> h(data.size(), 0);
 	if (2*floor(sizeInput/2) == sizeInput)
 	{
 		// even
@@ -73,7 +76,7 @@ void AbsHilbert(wxVector<SIGNALTYPE>& data)
 	// Absolute value
 	for (i = 0; i < sizeInput; i++)
 	{
-		complex<SIGNALTYPE> tmp(in[i].x, in[i].y);
+		complex<T> tmp(in[i].x, in[i].y);
 		data.at(i) = abs(tmp);
 	}
 }
@@ -217,14 +220,8 @@ void Buttord(const double& wp, double& ws, const double& rp, const double& rs, i
 	double ord;
 	double x, y, f1, f2, log;
 
-	//wxString str;
-
 	if ( wp <= 0 || wp >= 1 || ws <= 0 || ws >= 1)
-	{
-		//str.Printf(wxT("Bad input parameters for Buttord! \n wp = %f, ws = %f"), wp, ws);
-		//throw new CException(str, wxT("CDSP::Buttord"));
 		throw runtime_error("Bad input parameters for Buttord!");
-	}
 
 	if (wp < ws)
 		ftype = ftype + 1;  // low (1)
@@ -418,7 +415,7 @@ err1:
 }
 
 /// Designs an Nth order lowpass digital Butterworth filter and returns the filter coefficients in length N+1 vectors B (numerator) and A (denominator)
-bool Butter(wxVector<double>& b, wxVector<double>& a, const int& order, const double& Wn, FILTERTYPE ftype)
+bool Butter(vector<double>& b, vector<double>& a, const int& order, const double& Wn, FILTERTYPE ftype)
 {
 	struct   coeff coeff;
 	int      res;
@@ -452,10 +449,11 @@ bool Butter(wxVector<double>& b, wxVector<double>& a, const int& order, const do
 }
 
 /// Digital signal filtering 10-60Hz
-void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& fs, const BANDWIDTH& bandwidth)
+template<class T>
+void Filtering(vector<T>* data, const int& countChannels, const int& fs, const BANDWIDTH& bandwidth)
 {
 	int 			 i;
-	wxVector<double> a, b;
+	vector<double> a, b;
 	//CFiltFilt** 	 threads = new CFiltFilt*[countChannels];
 
 	double           Wp, Ws, Rp = 6, Rs = 60;
@@ -489,10 +487,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 
 		// filter design
 		if (!Butter(b, a, order, Ws, HIGHPASS))
-		{
-			//throw new CException(wxT("Error calculating filter design for HIGHPASS filter!"), wxT("CDSP::Filtering"));
 			throw runtime_error("Error calculating filter design for HIGHPASS filter!");
-		}
 	}
 	else
 	{
@@ -501,7 +496,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	}
 
 	// run filtering
-	vector<float> af, bf;
+	vector<T> af, bf;
 
 	for (double e : a)
 		af.push_back(e);
@@ -512,7 +507,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	#pragma omp parallel for
 	for (i = 0; i < countChannels; i++)
 	{
-		vector<float> out;
+		vector<T> out;
 		filtfilt(bf, af, data[i], out);
 
 		assert(data[i].size() == out.size());
@@ -550,10 +545,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 
 		// filter design
 		if (!Butter(b, a, order, Ws, LOWPASS))
-		{
-			//throw new CException(wxT("Error calculating filter design for HIGHPASS filter!"), wxT("CDSP::Filtering"));
 			throw runtime_error("Error calculating filter design for HIGHPASS filter!");
-		}
 	}
 	else
 	{
@@ -572,7 +564,7 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 	#pragma omp parallel for
 	for (i = 0; i < countChannels; i++)
 	{
-		vector<float> out;
+		vector<T> out;
 		filtfilt(bf, af, data[i], out);
 
 		assert(data[i].size() == out.size());
@@ -595,11 +587,12 @@ void Filtering(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& 
 }
 
 /// Digital signal filtering Nx50hz
-void Filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& fs, const int& hum_fs, const BANDWIDTH& bandwidth)
+template<class T>
+void Filt50Hz(vector<T>* data, const int& countChannels, const int& fs, const int& hum_fs, const BANDWIDTH& bandwidth)
 {
 	double 			 R = 1, r = 0.985, tmp, i;
-	wxVector<int> 	 f0;
-	wxVector<float> b, a;
+	vector<int> 	 f0;
+	vector<T> b, a;
 
 	for (i = hum_fs; i <= fs/2 && i <= bandwidth.m_bandHigh; i+= hum_fs)
 		f0.push_back(i);
@@ -623,7 +616,7 @@ void Filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& f
 		#pragma omp parallel for
 		for (int j = 0; j < countChannels; j++)
 		{
-			vector<float> out;
+			vector<T> out;
 			filtfilt(b, a, data[j], out);
 
 			assert(data[j].size() == out.size());
@@ -633,7 +626,8 @@ void Filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const int& f
 }
 
 /*/// Digital signal filtering Nx50hz
-void filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const wxVector<double>& B, const wxVector<double>& A)
+template<class T>
+void filt50Hz(vector<T>* data, const int& countChannels, const vector<double>& B, const vector<double>& A)
 {
 	int i;
 	CFiltFilt** threads = new CFiltFilt*[countChannels];
@@ -658,19 +652,20 @@ void filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const wxVect
 /**
  * Structure containing output data from \ref COneChannelDetect
  */
-typedef struct oneChannelDetectRet
+template<class T>
+struct oneChannelDetectRet
 {
 public:
-	wxVector<bool>*   	 m_markersHigh;
-	wxVector<bool>*   	 m_markersLow;
-	wxVector<double>  	 m_prahInt[2];
-	wxVector<double>  	 m_envelopeCdf;
-	wxVector<double>  	 m_envelopePdf;
-	wxVector<SIGNALTYPE> m_envelope;
+	vector<bool>*   	 m_markersHigh;
+	vector<bool>*   	 m_markersLow;
+	vector<double>  	 m_prahInt[2];
+	vector<double>  	 m_envelopeCdf;
+	vector<double>  	 m_envelopePdf;
+	vector<T> m_envelope;
 
 	/// A constructor
-	oneChannelDetectRet(wxVector<bool>*& markersHigh, wxVector<bool>*& markersLow, const wxVector<double> prahInt[2],
-						const wxVector<double> envelopeCdf, const wxVector<double> envelopePdf, const wxVector<SIGNALTYPE>& envelope)
+	oneChannelDetectRet(vector<bool>*& markersHigh, vector<bool>*& markersLow, const vector<double> prahInt[2],
+						const vector<double> envelopeCdf, const vector<double> envelopePdf, const vector<T>& envelope)
 		: m_markersHigh(markersHigh), m_markersLow(markersLow)
 	{
 		m_prahInt[0].assign(prahInt[0].begin(), prahInt[0].end());
@@ -688,15 +683,14 @@ public:
 		if (m_markersHigh != m_markersLow)
 			delete m_markersLow;
 	}
-
-} ONECHANNELDETECTRET;
+};
 
 /**
  * Implementation "one_channel_detect" function from reference implementation of spike detector.
  */
+template<class T>
 class COneChannelDetect
 {
-// methods
 public:
 	/**
 	 * A constructor.
@@ -706,17 +700,14 @@ public:
 	 * @param index indexs
 	 * @param channel number of channel
 	 */
-	COneChannelDetect(const wxVector<SIGNALTYPE>* data, const DETECTOR_SETTINGS* settings, const int& fs, const wxVector<int>* index, const int& channel);
-
-	/**
-	 * A virtual desctructor.
-	 */
-	virtual ~COneChannelDetect();
+	COneChannelDetect(const vector<T>* data, const DETECTOR_SETTINGS* settings, const int& fs, const vector<int>* index, const int& channel)
+		: m_data(data), m_settings(settings), m_fs(fs), m_index(index), m_channel(channel) {}
+	virtual ~COneChannelDetect() {}
 
 	/**
 	 * This is the entry point of the thread.
 	 */
-	virtual ONECHANNELDETECTRET* Entry();
+	virtual oneChannelDetectRet<T>* Entry();
 
 private:
 	/**
@@ -724,7 +715,7 @@ private:
 	 * @param data a vector of input data
 	 * @return a mean
 	 */
-	double mean(wxVector<double>& data);
+	double mean(vector<double>& data);
 
 	/**
 	 * Calculating a variance from data in vector.
@@ -732,7 +723,7 @@ private:
 	 * @param mean mean of data in vector
 	 * @return a variance
 	 */
-	double variance(wxVector<double>& data, const double & mean);
+	double variance(vector<double>& data, const double & mean);
 
 	/**
 	 * Detection of local maxima in envelope.
@@ -741,7 +732,7 @@ private:
 	 * @param polyspike_union_time polyspike union time
 	 * @return vector cintaining markers of local maxima
 	 */
-	wxVector<bool>* localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time);
+	vector<bool>* localMaximaDetection(vector<T>& envelope, const vector<double>& prah_int, const double& polyspike_union_time);
 
 	/**
 	 * Detecting of union and their merging.
@@ -749,7 +740,7 @@ private:
 	 * @param envelope envelope of input channel
 	 * @param union_samples union samples time
 	 */
-	void detectionUnion(wxVector<bool>* marker1, wxVector<SIGNALTYPE>& envelope, const double& union_samples);
+	void detectionUnion(vector<bool>* marker1, vector<T>& envelope, const double& union_samples);
 
 	/**
 	 * Finding of the highes maxima of the section with local maxima.
@@ -759,56 +750,36 @@ private:
 	 * @param point
 	 * @param marker1
 	 */
-	void findStartEndCrossing(wxVector<int> point[2], const wxVector<bool>* marker1);
+	void findStartEndCrossing(vector<int> point[2], const vector<bool>* marker1);
 
-private:
 	/// input data
-	const wxVector<SIGNALTYPE>* m_data;
+	const vector<T>* m_data;
 	/// settinggs of the detector
 	const DETECTOR_SETTINGS*    m_settings;
 	/// sample rate
 	const int 			  		m_fs;
 	/// indexs of suspects areas
-	const wxVector<int>* 		m_index;
+	const vector<int>* 		m_index;
 	/// channel number
 	const int 					m_channel;
 };
 
-// ------------------------------------------------------------------------------------------------
-// COneChannelDetect
-// ------------------------------------------------------------------------------------------------
-
-/// A constructor
-COneChannelDetect::COneChannelDetect(const wxVector<SIGNALTYPE>* data, const DETECTOR_SETTINGS* settings, const int& fs, const wxVector<int>* index,
-									 const int& channel)
-	: m_data(data), m_settings(settings), m_fs(fs), m_index(index), m_channel(channel)
+template<class T>
+oneChannelDetectRet<T>* COneChannelDetect<T>::Entry()
 {
-	/* empty */
-}
-
-/// A destructor
-COneChannelDetect::~COneChannelDetect()
-{
-	/* empty */
-}
-
-/// This is the entry point of the thread.
-ONECHANNELDETECTRET* COneChannelDetect::Entry()
-{
-
-	wxVector<SIGNALTYPE>  envelope(m_data->begin(), m_data->end());
+	vector<T>  envelope(m_data->begin(), m_data->end());
 	int 				  start, stop, tmp, i, j;
 	int 				  indexSize = m_index->size();
 	int     			  envelopeSize = envelope.size();
 	double 				  std, l, m;
 
-	wxVector<double>      logs;
+	vector<double>      logs;
 	alglib::real_1d_array r1a_logs;
 
-	//wxVector<SIGNALTYPE>  phatMedian, phatStd;
+	//vector<T>  phatMedian, phatStd;
 	vector<double>  phatMedian, phatStd;
 
-	ONECHANNELDETECTRET*  ret = NULL;
+	oneChannelDetectRet<T>*  ret = NULL;
 
 	// Hilbert's envelope (intense envelope)
 	CDSP::AbsHilbert(envelope);
@@ -839,7 +810,7 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 	double r = (double)envelope.size() / (double)indexSize;
 	double n_average = m_settings->m_winsize;
 
-	wxVector<double> b, a;
+	vector<double> b, a;
 	tmp = round(n_average*m_fs/r);
 
 	if (tmp > 1)
@@ -864,8 +835,8 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 	}
 
 	// interpolation of thresholds value to threshold curve (like backround)
-	wxVector<double> phat_int[2];
-	wxVector<double> x, y;
+	vector<double> phat_int[2];
+	vector<double> x, y;
 	alglib::real_1d_array xreal, yrealMedian, yrealStd, x2real, retMedian, retStd;
 
 	if (phatMedian.size() > 1)
@@ -882,8 +853,8 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 		try
 		{
 			// interpolation Median and Std
-			wxVector<double> phatMedVecDoub(phatMedian.begin(), phatMedian.end());
-			wxVector<double> phatStdVecDoub(phatStd.begin(), phatStd.end());
+			vector<double> phatMedVecDoub(phatMedian.begin(), phatMedian.end());
+			vector<double> phatStdVecDoub(phatStd.begin(), phatStd.end());
 
 			xreal.setcontent(x.size(), &x[0]);
 			yrealMedian.setcontent(phatMedVecDoub.size(), &phatMedVecDoub[0]);
@@ -949,11 +920,11 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 
 	// LOGNORMAL distr.
 	double tmp_diff, tmp_exp, tmp_square, lognormal_mode, lognormal_median, tmp_prah_int, lognormal_mean, tmp_sum;
-	wxVector<double> prah_int[2];
+	vector<double> prah_int[2];
 
 	double tmp_sqrt_one, tmp_to_erf, tmp_log, tmp_erf, tmp_pdf, tmp_x, tmp_x2;
 	double tmp_sqrt = sqrt(2*M_PI);
-	wxVector<double> envelope_cdf, envelope_pdf;
+	vector<double> envelope_cdf, envelope_pdf;
 	int phatIntSize = phat_int[0].size();
 
 	for (i = 0; i < phatIntSize; i++)
@@ -992,7 +963,7 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 		envelope_pdf.push_back(tmp_pdf);
 	}
 
-	wxVector<bool>* markers_high = NULL,* markers_low = NULL;
+	vector<bool>* markers_high = NULL,* markers_low = NULL;
 	try {
 		markers_high = localMaximaDetection(envelope, prah_int[0], m_settings->m_polyspike_union_time);
 		detectionUnion(markers_high, envelope, m_settings->m_polyspike_union_time * m_fs);
@@ -1010,16 +981,16 @@ ONECHANNELDETECTRET* COneChannelDetect::Entry()
 		return NULL;
 	}
 
-	ret = new ONECHANNELDETECTRET(markers_high, markers_low, prah_int, envelope_cdf, envelope_pdf, envelope);
+	ret = new oneChannelDetectRet<T>(markers_high, markers_low, prah_int, envelope_cdf, envelope_pdf, envelope);
 	return ret;
 }
 
-/// Calculating a mean from data in vector
-double COneChannelDetect::mean(wxVector<double>& data)
+template<class T>
+double COneChannelDetect<T>::mean(vector<double>& data)
 {
 	float sum = 0;
-	wxVector<double>::iterator b = data.begin();
-	wxVector<double>::iterator e = data.end();
+	vector<double>::iterator b = data.begin();
+	vector<double>::iterator e = data.end();
 
 	while (b != e)
 	{
@@ -1030,12 +1001,12 @@ double COneChannelDetect::mean(wxVector<double>& data)
 	return sum / data.size();
 }
 
-/// Calculating a variance from data in vector
-double COneChannelDetect::variance(wxVector<double>& data, const double & mean)
+template<class T>
+double COneChannelDetect<T>::variance(vector<double>& data, const double & mean)
 {
-	wxVector<double> v(data.begin(), data.end());
+	vector<double> v(data.begin(), data.end());
 
-	wxVector<double> diff(v.size());
+	vector<double> diff(v.size());
 	std::transform(v.begin(), v.end(), diff.begin(),
 			std::bind2nd(std::minus<double>(), mean));
 	double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
@@ -1043,29 +1014,29 @@ double COneChannelDetect::variance(wxVector<double>& data, const double & mean)
 	return sq_sum / (v.size()-1);
 }
 
-/// Detection of local maxima in envelope
-wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time)
+template<class T>
+vector<bool>* COneChannelDetect<T>::localMaximaDetection(vector<T>& envelope, const vector<double>& prah_int, const double& polyspike_union_time)
 {
 	unsigned int         size = envelope.size();
-	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0); // This leak was fixed in ~oneChannelDetectRet().
-	wxVector<int>   	 point[2];
-	wxVector<SIGNALTYPE> seg, seg_s;
-	wxVector<int>        tmp_diff_vector;
+	vector<bool>* 	 marker1 = new vector<bool>(size, 0); // This leak was fixed in ~oneChannelDetectRet().
+	vector<int>   	 point[2];
+	vector<T> seg, seg_s;
+	vector<int>        tmp_diff_vector;
 	int        			 pointer_max;
-	SIGNALTYPE 			 tmp_max;
+	T 			         tmp_max;
 	int 				 tmp_pointer;
 	unsigned int 		 i, j, tmp;
 
-	wxVector<int> 		 pointer;
+	vector<int> 		 pointer;
 	bool 				 state_previous = false;
 	int 				 tmp_ceil, tmp_stop, start;
 	float 				 tmp_sum_elems;
 
-	wxVector<int> 		 lokal_max, lokal_max_poz;
-	wxVector<SIGNALTYPE> lokal_max_val;
+	vector<int> 		 lokal_max, lokal_max_poz;
+	vector<T> lokal_max_val;
 	float 				 tmp_diff;
 	int 				 tmp_sign, tmp_sign_next;
-	wxVector<float> 	 tmp_diff_vector2;
+	vector<float> 	 tmp_diff_vector2;
 
 	for (i = 0; i < size; i++)
 		if (envelope[i] > prah_int[i])
@@ -1074,10 +1045,7 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 	// start + end crossing
 	findStartEndCrossing(point, marker1);
 	if (point[0].size() != point[1].size())
-	{
-		//throw new CException(wxT("local_maxima_detection: point sizes are different"), wxT("COneChannelDetect::localMaximaDetection"));
 		throw runtime_error("local_maxima_detection: point sizes are different");
-	}
 
 	marker1->assign(size, 0);
 
@@ -1158,7 +1126,7 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 		for(j = pointer.at(i)+1; j < (unsigned)tmp_stop; j++)
 				seg.push_back(marker1->at(j));
 
-		for (wxVector<SIGNALTYPE>::iterator j = seg.begin() ; j != seg.end(); ++j)
+		for (auto j = seg.begin() ; j != seg.end(); ++j)
 			tmp_sum_elems += *j;
 
 		if (state_previous)
@@ -1186,10 +1154,7 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 	findStartEndCrossing(point, marker1);
 
 	if (point[0].size() != point[1].size())
-	{
-		//throw new CException(wxT("local_maxima_detection: point sizes are different 2"), wxT("COneChannelDetect::localMaximaDetection"));
 		throw runtime_error("local_maxima_detection: point sizes are different 2");
-	}
 
 	// local maxima with gradient in souroundings
 	for (i = 0; i < point[0].size(); i++)
@@ -1250,15 +1215,15 @@ wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& en
 	return marker1;
 }
 
-/// Detecting of union and their merging.
-void COneChannelDetect::detectionUnion(wxVector<bool>* marker1, wxVector<SIGNALTYPE>& envelope, const double& union_samples)
+template<class T>
+void COneChannelDetect<T>::detectionUnion(vector<bool>* marker1, vector<T>& envelope, const double& union_samples)
 {
 	int 				  i, j, start, stop, sum = round(union_samples);
 	float 			 	  max; // maximum value in segment of envelope
 	int 			 	  max_pos; // position of maximum
-	wxVector<double> 	  vec_MASK(sum, 1.0);
-	wxVector<double> 	  vec_marker2(marker1->begin(), marker1->end());
-	wxVector<int>    	  point[2];
+	vector<double> 	  vec_MASK(sum, 1.0);
+	vector<double> 	  vec_marker2(marker1->begin(), marker1->end());
+	vector<int>    	  point[2];
 	alglib::real_1d_array r1a_marker2, r1a_MASK, r1a_ret;
 
 	// dilatation
@@ -1306,8 +1271,8 @@ void COneChannelDetect::detectionUnion(wxVector<bool>* marker1, wxVector<SIGNALT
 	}
 }
 
-// Finding of the highes maxima of the section with local maxima
-void COneChannelDetect::findStartEndCrossing(wxVector<int> point[2], const wxVector<bool>* marker1)
+template<class T>
+void COneChannelDetect<T>::findStartEndCrossing(vector<int> point[2], const vector<bool>* marker1)
 {
 	bool one = false;
 	bool tmp_marker;
@@ -1382,7 +1347,7 @@ void CDetectorOutput::Add(const double& pos, const double& dur, const int& chan,
 }
 
 ///Erase records at positions.
-void CDetectorOutput::Remove(const wxVector<int>& pos)
+void CDetectorOutput::Remove(const vector<int>& pos)
 {
 	unsigned i, counter = 0;
 
@@ -1435,7 +1400,7 @@ CDischarges::~CDischarges()
  * Erase records.
  * @param pos positions of records.
  */
-void CDischarges::Remove(const wxVector<int>& pos)
+void CDischarges::Remove(const vector<int>& pos)
 {
 	unsigned i, channel, counter = 0;
 
@@ -1528,8 +1493,8 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 	m_discharges = discharges;
 	int 				  i, j, k, indexSize;
 	int64_t				  start, stop, tmp;
-	//wxVector<SIGNALTYPE>* segments = NULL;
-	wxVector<int64_t>         indexStart, indexStop; // TODO: Make sure all variables holding the sample index have 8 bytes like these ones.
+	//vector<T>* segments = NULL;
+	vector<int64_t>         indexStart, indexStop; // TODO: Make sure all variables holding the sample index have 8 bytes like these ones.
 
 	BANDWIDTH 			  bandwidth(m_settings->m_band_low, m_settings->m_band_high);
 
@@ -1539,8 +1504,8 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 	int 				  posSize, disSize, tmpFirst, tmpLast;
 	double 				  minMP, tmpShift;
 
-	wxVector<int>         removeOut;
-	wxVector<int>         removeDish;
+	vector<int>         removeOut;
+	vector<int>         removeDish;
 
 //	int 				  countSamples = m_model->GetCountSamples();
 //	int 				  countChannels = m_model->GetCountChannels();
@@ -1584,9 +1549,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 //			break;
 //		}
 		if (cancelComputation)
-		{
 			break;
-		}
 
 //		segments = m_model->GetSegment(start, stop);
 //		if (segments == NULL)
@@ -1694,7 +1657,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 
 /// Calculate the starts and ends of indexes for @see #spikeDetector
 template<class T>
-void Spikedet<T>::getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize)
+void Spikedet<T>::getIndexStartStop(vector<int64_t>& indexStart, vector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize)
 {
 	int64_t start = 0, end;
 	int i, startSize;
@@ -1723,7 +1686,7 @@ void Spikedet<T>::getIndexStartStop(wxVector<int64_t>& indexStart, wxVector<int6
 		if (indexStop.back() - indexStart.back() < T_seg * fs)
 		{
 			indexStart.pop_back();
-			//indexStart.pop_back(); // No idea what this shit was supposed to mean...
+			//indexStart.pop_back(); // No idea what this was supposed to mean...
 			//indexStop.back() = cntElemInCh;
 			auto tmp = indexStop.back();
 			indexStop.pop_back();
@@ -1748,29 +1711,29 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	int                   fs = inputFS;
 
 	int    		  		  countRecords = stopSample - startSample;
-	wxVector<int> 		  index;
+	vector<int> 		  index;
 	int 		  		  stop, step;
 	int	  	        	  i, j;
 	float 				  k;
 	int 				  tmp_start;
-	COneChannelDetect**   threads;
-	ONECHANNELDETECTRET** ret;
+	COneChannelDetect<T>**   threads;
+	oneChannelDetectRet<T>** ret;
 
 	int    	  			  winsize  = m_settings->m_winsize * fs;
 	double 	  			  noverlap = m_settings->m_noverlap * fs;
 
 	// OUT
 	double 				  t_dur = 0.005;
-	wxVector<bool> 		  ovious_M(countRecords, false);
+	vector<bool> 		  ovious_M(countRecords, false);
 	double 				  position;
 	bool 				  tmp_sum = false;
 
-	wxVector<double>** 	  m;
+	vector<double>** 	  m;
 	int 				  tmp_round;
 	float 				  tmp_start2, tmp_stop;
 
 	// definition of multichannel events vectors
-	wxVector<int>* 		  point = /*new wxVector<int>[2]*/nullptr; // Why the fuck is this here?
+	vector<int>* 		  point = /*new vector<int>[2]*/nullptr; // Why is this here?
 	int 				  tmp_old = 0;
 	int 				  tmp_act = 0;
 	int 				  channel;
@@ -1785,7 +1748,7 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	double 				  tmp_mp;
 	int    				  tmp_row;
 
-	wxVector<T>* data = prepareSegment(loader, startSample, stopSample);
+	vector<T>* data = prepareSegment(loader, startSample, stopSample);
 
 	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
 	if (fs > decimation)
@@ -1817,13 +1780,13 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	CDSP::Filtering(data, countChannels, fs, bandwidth);
 
 	// local maxima detection
-	ret = new ONECHANNELDETECTRET*[countChannels];
-	threads = new COneChannelDetect*[countChannels];
+	ret = new oneChannelDetectRet<T>*[countChannels];
+	threads = new COneChannelDetect<T>*[countChannels];
 
 	#pragma omp parallel for // This parallel optimization has the most effect. TODO: measure speedup for different instances
 	for (i = 0; i < countChannels; i++)
 	{
-		threads[i] = new COneChannelDetect(&data[i], m_settings, fs, &index, i);
+		threads[i] = new COneChannelDetect<T>(&data[i], m_settings, fs, &index, i);
 		//threads[i]->Run();
 		ret[i] = threads[i]->Entry();
 
@@ -1912,9 +1875,9 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	}
 
 	// making M stack pointer of events
-	m = new wxVector<double>*[countChannels];
+	m = new vector<double>*[countChannels];
 	for (i = 0; i < countChannels; i++)
-		m[i] = new wxVector<double>(countRecords, 0.0);
+		m[i] = new vector<double>(countRecords, 0.0);
 
 	for (i = 0; i < (int)out->m_pos.size(); i++)
 	{
@@ -1929,7 +1892,7 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 
 	// definition of multichannel events vectors
 	delete [] point; // TODO: remove this
-	point = new wxVector<int>[2];
+	point = new vector<int>[2];
 	for (i = 0; i < countRecords; i++)
 	{
 		tmp_act = 0;
@@ -2108,6 +2071,6 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 }
 
 template class Spikedet<float>;
-//template class Spikedet<double>; // TODO: try it with doubles
+template class Spikedet<double>;
 
 } // namespace AlenkaSignal
