@@ -35,3 +35,5 @@ unit-test/googletest
 clFFT
 alglib
 eigen
+libsamplerate
+

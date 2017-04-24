@@ -4,9 +4,10 @@
 #include "../include/AlenkaSignal/filter.h"
 #include "../include/AlenkaSignal/filterprocessor.h"
 
-#include "interpolation.h"
-#include "fasttransforms.h"
+#include <interpolation.h>
+#include <fasttransforms.h>
 #include <Eigen/Dense>
+#include <samplerate.h>
 
 #include <cmath>
 #include <cstdio>
@@ -25,7 +26,12 @@ namespace
 namespace CDSP
 {
 
-/// Calculation of the absolute values of the Hilbert transform
+/**
+ * Calculation of the absolute values of the Hilbert transform.
+ * Performs a Hilbert transform and then calculates its absolute value.
+ * This function is based on the MATLAB function hilbert(Xr).
+ * @param data Input and output vector containing data.
+ */
 template<class T>
 void AbsHilbert(vector<T>& data)
 {
@@ -212,7 +218,17 @@ struct coeff {
 /// Data type specifications - DOUBLE
 #define RTF_DOUBLE	1
 
-/// Butterworth filter order selection
+/**
+ * Butterworth filter order selection.
+ * Calculating the order N of the lowest order digital Butterworth filter which has a passband ripple of no more than Rp dB
+ * and a stopband attenuation of at least Rs dB. Also calculate Wn, the Butterworth natural frequency (or, the "3 dB frequency")
+ * to use with BUTTER to achieve the specifications. This function is based on Matlab function: [order,wn] = buttord(wp,ws,rp,rs,opt).
+ * @param wp the passband edge frequency, normalized from 0 to 1
+ * @param ws input and output variable representing stopband edge frequencies, replace output Wn, normalized from 0 to 1
+ * @param rp a passband ripple max value dB
+ * @param rs a stopband attenuation dB
+ * @param order ouput variable to which it is stored the order
+ */
 void Buttord(const double& wp, double& ws, const double& rp, const double& rs, int& order)
 {
 	int ftype = 0;
@@ -258,6 +274,9 @@ void Buttord(const double& wp, double& ws, const double& rp, const double& rs, i
 	ws = ((2/PId)*atan(WN));
 }
 
+/**
+ * This method is based on functions from librtfilters \ref http://cnbi.epfl.ch/software/rtfilter.html
+ */
 void getPoleCoefs(double p, double np, double fc, double r, int highpass, double a[3], double b[3])
 {
 	double rp, ip, es, vx, kx, t, w, m, d, x0, x1, x2, y1, y2, k;
@@ -304,6 +323,9 @@ void getPoleCoefs(double p, double np, double fc, double r, int highpass, double
 	}
 }
 
+/**
+ * Compute Chebyshev coefficients. This method is based on functions from librtfilters \ref http://cnbi.epfl.ch/software/rtfilter.html
+ */
 int computeChebyIir(double *num, double *den, unsigned int num_pole,
 			  int highpass, double ripple, double cutoff_freq)
 {
@@ -376,9 +398,12 @@ exit:
 	return retval;
 }
 
-/// Calculate coefficients for Butterworth filter.
-int calcButterCoeff(unsigned int nchann, int proctype, double fc,
-					  unsigned int num_pole, int highpass, struct coeff *coeff)
+/**
+ * Calculate coefficients for Butterworth filter.
+ * @param coeff contains calculated coefficients.
+ * @return 0 on success or negative value on failure.
+ */
+int calcButterCoeff(unsigned int nchann, int proctype, double fc, unsigned int num_pole, int highpass, struct coeff *coeff)
 {
 	double* num = NULL,* den = NULL;
 	double ripple = 0.0;
@@ -414,7 +439,15 @@ err1:
 	return res;
 }
 
-/// Designs an Nth order lowpass digital Butterworth filter and returns the filter coefficients in length N+1 vectors B (numerator) and A (denominator)
+/**
+ * Designs an Nth order lowpass digital Butterworth filter and returns the filter coefficients in length N+1 vectors B (numerator) and A (denominator).
+ * This function is based on Matlab function: [num, den, z, p] = butter(n, Wn, varargin).
+ * @param b ouput vector in which are saved numerator values
+ * @param a output vector in which are saved denominator values
+ * @param order filter order
+ * @param Wn the cutoff frequency, must be 0.0 < Wn < 1.0, with 1.0 corresponding to half the sample rate.
+ * @param ftype filter type: HIGHPASS or LOWPASS, difine on FILTERTYPE
+ */
 bool Butter(vector<double>& b, vector<double>& a, const int& order, const double& Wn, FILTERTYPE ftype)
 {
 	struct   coeff coeff;
@@ -428,11 +461,8 @@ bool Butter(vector<double>& b, vector<double>& a, const int& order, const double
 	int highpass            = ftype;            /* lowpass filter */
 
 	res = calcButterCoeff(nchann, proctype, fc, num_pole, highpass, &coeff);
-	if (res != 0) {
-		//cout << "Error: unable to calculate coefficients: " << res << endl;
-		//return false;
+	if (res != 0)
 		throw runtime_error("Error: unable to calculate coefficients");
-	}
 
 	b.clear();
 	a.clear();
@@ -448,7 +478,127 @@ bool Butter(vector<double>& b, vector<double>& a, const int& order, const double
 	return true;
 }
 
-/// Digital signal filtering 10-60Hz
+/**
+ * Original resampling thread code.
+ * @param m_data vector with input data, output will be stored in it
+ * @param m_actFS actual sample rate
+ * @param m_requiredFS required sample rate
+ */
+void resampleOneChannel(vector<float>* m_data, const int& m_actFS, const int& m_requiredFS)
+{
+	int err, ret;
+	float* out = new float[m_data->size()];
+
+	SRC_STATE* state = src_new(SRC_SINC_BEST_QUALITY, 1, &err);
+	SRC_DATA*  src_data = new SRC_DATA();
+
+	//src_data->data_in = &m_data->front();
+	src_data->data_in = m_data->data();
+	src_data->data_out = out;
+	src_data->input_frames = m_data->size();
+	src_data->output_frames = m_data->size();
+	src_data->src_ratio = (float)m_requiredFS / (float)m_actFS;
+	src_data->end_of_input = m_data->size();
+
+	ret = src_process(state, src_data);
+	assert(ret == 0); (void)ret;
+
+	src_delete(state);
+	state = NULL;
+
+	assert(src_data->output_frames_gen <= static_cast<int>(m_data->size()));
+
+	m_data->clear();
+	m_data->assign(out, out + src_data->output_frames_gen);
+
+	delete[] out;
+	delete src_data;
+}
+
+template<class T>
+void checkSizes(vector<T>*& data, int countChannels, int expectedOutputSize)
+{
+	// check if outputs have expected size, if not, add elems
+	int i, j, outputSize;
+
+	for (i = 0; i < countChannels; i++)
+	{
+		outputSize = data[i].size();
+		if (outputSize < expectedOutputSize)
+		{
+			T val = data[i].back();
+
+			for (j = 0; j < expectedOutputSize - outputSize; j++)
+			{
+				data[i].push_back(val);
+			}
+		}
+		else if (outputSize > expectedOutputSize)
+		{
+			for (j = 0; j < outputSize - expectedOutputSize; j++)
+			{
+				data[i].pop_back();
+			}
+		}
+	}
+}
+
+/**
+ * Method for digital signal resampling - In this program is used for decimating.
+ * The result is save in the data param.
+ * @param data array of vectors representing input / output data
+ * @param countChannels count channels in input signal (data) - size of the array
+ * @param actualFS actual sample rate
+ * @param requiredFS required sample rate
+ */
+static void Resample(vector<float>*& data, const int& countChannels, const int& actualFS, const int& requiredFS)
+{
+	int i;
+	int expectedOutputSize = ceil(data[0].size() * (double)requiredFS/(double)actualFS);
+
+	#pragma omp parallel
+	for (i = 0; i < countChannels; i++)
+	{
+		resampleOneChannel(&data[i], actualFS, requiredFS);
+	}
+
+	checkSizes(data, countChannels, expectedOutputSize);
+}
+
+static void Resample(vector<double>*& data, const int& countChannels, const int& actualFS, const int& requiredFS)
+{
+	int i;
+	int expectedOutputSize = ceil(data[0].size() * (double)requiredFS/(double)actualFS);
+
+	vector<vector<float>*> newData;
+	for (i = 0; i < countChannels; i++)
+	{
+		newData.push_back(new vector<float>);
+		newData[i]->assign(data[i].begin(), data[i].end());
+	}
+
+	#pragma omp parallel
+	for (i = 0; i < countChannels; i++)
+	{
+		resampleOneChannel(newData[i], actualFS, requiredFS);
+	}
+
+	for (i = 0; i < countChannels; i++)
+	{
+		data[i].assign(newData[i]->begin(), newData[i]->end());
+		delete newData[i];
+	}
+
+	checkSizes(data, countChannels, expectedOutputSize);
+}
+
+/**
+ * Digital signal filtering 10-60Hz
+ * @param data vector array with input / output data
+ * @param countChannels count channels in input signal (data) - size of the array
+ * @param fs sampling rate of input signal
+ * @param bandwidth BANDWIDTH struct containing integers band_low and band_high.
+ */
 template<class T>
 void Filtering(vector<T>* data, const int& countChannels, const int& fs, const BANDWIDTH& bandwidth)
 {
@@ -586,7 +736,14 @@ void Filtering(vector<T>* data, const int& countChannels, const int& fs, const B
 	//delete [] threads;
 }
 
-/// Digital signal filtering Nx50hz
+/**
+ * Digital signal filtering Nx50hz
+ * @param data Array of vector containing input / output data.
+ * @param countChannels count channels in input signal (data) - size of the array
+ * @param fs sampling rate of input signal
+ * @param hum_fs Integer main_hum_freq from spike detector setting.
+ * @param bandwidth BANDWIDTH struct containing integers band_low and band_high.
+ */
 template<class T>
 void Filt50Hz(vector<T>* data, const int& countChannels, const int& fs, const int& hum_fs, const BANDWIDTH& bandwidth)
 {
@@ -612,7 +769,6 @@ void Filt50Hz(vector<T>* data, const int& countChannels, const int& fs, const in
 		a.push_back(tmp);
 		a.push_back(r*r);
 
-		//filt50Hz(data, countChannels, b, a);
 		#pragma omp parallel for
 		for (int j = 0; j < countChannels; j++)
 		{
@@ -624,28 +780,6 @@ void Filt50Hz(vector<T>* data, const int& countChannels, const int& fs, const in
 		}
 	}
 }
-
-/*/// Digital signal filtering Nx50hz
-template<class T>
-void filt50Hz(vector<T>* data, const int& countChannels, const vector<double>& B, const vector<double>& A)
-{
-	int i;
-	CFiltFilt** threads = new CFiltFilt*[countChannels];
-
-	for (i = 0; i < countChannels; i++)
-	{
-		threads[i] = new CFiltFilt(B, A, &data[i]);
-		threads[i]->Run();
-	}
-
-	for (i = 0; i < countChannels; i++)
-	{
-		threads[i]->Wait();
-		delete threads[i];
-	}
-
-	delete [] threads;
-}*/
 
 } // namespace CDSP
 
@@ -1424,13 +1558,17 @@ void CDischarges::Remove(const vector<int>& pos)
 }
 
 template<class T>
-Spikedet<T>::Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context) :
-	fs(fs), channelCount(channelCount), settings(settings), context(context)
+Spikedet<T>::Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings, OpenCLContext* context)
+	: m_fs(fs), channelCount(channelCount), originalDecimation(originalDecimation), settings(settings), context(context)
 {
 	progressCurrent = 0;
 	cancelComputation = false;
 
 	decimationF = settings.m_decimation;
+
+	if (originalDecimation)
+		return;
+
 	decimationF = nearestGreaterDivisor(min(fs, decimationF), fs);
 
 	if (decimationF < fs)
@@ -1513,23 +1651,23 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 	int64_t				  countSamples = loader->sampleCount();
 	int 				  countChannels = loader->channelCount(); // TODO: unite this with channelCount
 
-	int    	  			  winsize  = m_settings->m_winsize * fs;
+	int    	  			  winsize  = m_settings->m_winsize * m_fs;
 
 	//wxThreadEvent         event(wxEVT_THREAD, DETECTOR_EVENT);
 
 	// verify buffering
-	tmp = countSamples / fs;
+	tmp = countSamples / m_fs;
 	if (m_settings->m_buffering > tmp)
 		m_settings->m_buffering = tmp;
 
 	// Signal buffering
-	int64_t N_seg = floor(countSamples/(m_settings->m_buffering * fs));
+	int64_t N_seg = floor(countSamples/(m_settings->m_buffering * m_fs));
 	if (N_seg < 1)
 		N_seg = 1;
-	int64_t T_seg = round((double)countSamples/(double)N_seg/fs);
+	int64_t T_seg = round((double)countSamples/(double)N_seg/m_fs);
 
 	// Indices of segments with two-side overlap
-	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, fs, winsize);
+	getIndexStartStop(indexStart, indexStop, countSamples, T_seg, m_fs, winsize);
 	assert(indexStart.size() == indexStop.size());
 	indexSize = indexStop.size();
 
@@ -1557,7 +1695,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 //			// error - end of file?
 //			break;
 //		}
-		spikeDetector(loader, start, stop, countChannels, fs, bandwidth, subOut, subDischarges);
+		spikeDetector(loader, start, stop, countChannels, m_fs, bandwidth, subOut, subDischarges);
 		//continue;
 		//delete [] segments;
 		//segments = NULL;
@@ -1586,7 +1724,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 				for (j = 0; j < posSize; j++)
 				{
 					if (subOut->m_pos.at(j) < tmpFirst*3*m_settings->m_winsize ||
-						subOut->m_pos.at(j) > ((stop - start) - tmpLast*3*m_settings->m_winsize*fs)/fs )
+						subOut->m_pos.at(j) > ((stop - start) - tmpLast*3*m_settings->m_winsize*m_fs)/m_fs )
 							removeOut.push_back(j);
 				}
 				subOut->Remove(removeOut);
@@ -1602,7 +1740,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 							minMP = subDischarges->m_MP[k].at(j);
 					}
 
-					if (minMP < tmpFirst*3*m_settings->m_winsize || minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*fs)/fs)
+					if (minMP < tmpFirst*3*m_settings->m_winsize || minMP > ((stop-start) - tmpLast*3*m_settings->m_winsize*m_fs)/m_fs)
 						removeDish.push_back(j);
 				}
 				subDischarges->Remove(removeDish);
@@ -1611,7 +1749,7 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 
 		posSize = subOut->m_pos.size();
 		disSize = subDischarges->m_MP[0].size();
-		tmpShift = (indexStart.at(i)+1)/(double)fs - 1/(double)fs;
+		tmpShift = (indexStart.at(i)+1)/(double)m_fs - 1/(double)m_fs;
 
 		// connect out
 		for (j = 0; j < posSize; j++)
@@ -1733,7 +1871,7 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	float 				  tmp_start2, tmp_stop;
 
 	// definition of multichannel events vectors
-	vector<int>* 		  point = /*new vector<int>[2]*/nullptr; // Why is this here?
+	vector<int>* 		  point = nullptr;
 	int 				  tmp_old = 0;
 	int 				  tmp_act = 0;
 	int 				  channel;
@@ -1753,7 +1891,8 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
 	if (fs > decimation)
 	{
-		//CDSP::Resample(data, countChannels, fs, decimation);
+		if (originalDecimation)
+			CDSP::Resample(data, countChannels, fs, decimation);
 
 		fs = decimation;
 		winsize  = m_settings->m_winsize * fs;
@@ -1800,16 +1939,15 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	}
 
 	delete[] data;
-	//return;
-
 	delete [] threads;
+
 	// processing detection results
 	for (i = 0; i < countChannels; i++)
 	{
 		if (ret[i] == NULL)
 			continue;
 
-		//% first and last second is not analyzed (filter time response etc.)
+		// first and last second is not analyzed (filter time response etc.)
 		// first section
 		for (j = 0; j < fs; j++)
 		{
@@ -1891,8 +2029,9 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 	}
 
 	// definition of multichannel events vectors
-	delete [] point; // TODO: remove this
+	assert (!point);
 	point = new vector<int>[2];
+
 	for (i = 0; i < countRecords; i++)
 	{
 		tmp_act = 0;
@@ -1910,6 +2049,7 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 
 	// MV && MA && MW && MPDF && MD && MP
 	discharges = new CDischarges(countChannels);
+
 	for (i = 0; i < (int)point[0].size(); i++)
 	{
 		for (channel = 0; channel < countChannels; channel++)
@@ -1981,7 +2121,7 @@ void Spikedet<T>::spikeDetector(SpikedetDataLoader<T>* loader, int startSample, 
 template<class T>
 vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start, int stop)
 {
-	if (decimationF >= fs)
+	if (originalDecimation || decimationF >= m_fs)
 	{
 		vector<T>* output = new vector<T>[channelCount];
 
@@ -2047,9 +2187,9 @@ vector<T>* Spikedet<T>::prepareSegment(SpikedetDataLoader<T>* loader, int start,
 	checkClErrorCode(err, "clFinish()");
 
 	// Create the output segment;
-	int D = fs/decimationF;
+	int D = m_fs/decimationF;
 	assert(D >= 1);
-	assert(D*decimationF == fs);
+	assert(D*decimationF == m_fs);
 
 	vector<T>* output = new vector<T>[channelCount];
 

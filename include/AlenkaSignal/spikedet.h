@@ -163,7 +163,7 @@ typedef struct detectorSettings
 template<class T>
 class Spikedet
 {
-	int fs;
+	const int m_fs;
 	int channelCount;
 	FilterProcessor<T>* filterProcessor = nullptr;
 	int decimationF;
@@ -173,6 +173,7 @@ class Spikedet
 	int progressComplete;
 	std::atomic<int> progressCurrent;
 	std::atomic<bool> cancelComputation;
+	bool originalDecimation;
 
 	DETECTOR_SETTINGS settings;
 	OpenCLContext* context;
@@ -183,7 +184,7 @@ class Spikedet
 	CDischarges*       m_discharges;
 
 public:
-	Spikedet(int fs, int channelCount, DETECTOR_SETTINGS settings, OpenCLContext* context);
+	Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings, OpenCLContext* context);
 	~Spikedet();
 
 	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges);
@@ -211,7 +212,7 @@ public:
 	}
 
 private:
-	void getIndexStartStop(std::vector<int64_t>& indexStart, std::vector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int fs, int winsize);
+	void getIndexStartStop(std::vector<int64_t>& indexStart, std::vector<int64_t>& indexStop, int64_t cntElemInCh, int64_t T_seg, int m_fs, int winsize);
 
 	void spikeDetector(SpikedetDataLoader<T>* loader, int startSample, int stopSample, const int& countChannels, const int& inputFS, const BANDWIDTH& bandwidth,
 	                   CDetectorOutput*& out, CDischarges*& discharges);

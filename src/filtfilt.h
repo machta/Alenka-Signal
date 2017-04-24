@@ -1,3 +1,11 @@
+/**
+ * Zero-phase forward and reverse digital IIR filtering.
+ * This function is similar as Matlab function: y = filtfilt(b,a,x).
+ * @param A vector describing filter.
+ * @param B vector describing filter.
+ * @param X input vector.
+ * @param Y output vector.
+ */
 void filtfilt(vector<T> B, vector<T> A, const vector<T> &X, vector<T> &Y)
 {
 	using namespace Eigen;

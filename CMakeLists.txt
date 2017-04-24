@@ -35,7 +35,8 @@ set(LIBS_TO_LINK_ALENKA_SIGNAL ${LIBS_TO_LINK_ALENKA_SIGNAL} PARENT_SCOPE)
 # The library.
 file(GLOB SRC1 src/*)
 file(GLOB SRC2 alglib/src/*.cpp)
-add_library(alenka-signal STATIC ${SRC1} ${SRC2})
+file(GLOB SRC3 libsamplerate/src/*.c)
+add_library(alenka-signal STATIC ${SRC1} ${SRC2} ${SRC3})
 
 if(MSVC)
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-W4")
@@ -43,7 +44,7 @@ else()
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-Wall -pedantic")# -Wextra -Wconversion")
 endif()
 
-include_directories(include alglib/src eigen)
+include_directories(include alglib/src eigen libsamplerate/src)
 
 if(BUILD_TESTS_ALENKA_SIGNAL)
 	add_subdirectory(unit-test)

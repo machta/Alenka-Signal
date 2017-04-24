@@ -41,6 +41,17 @@ else
 	eigen=OK || eigen=fail
 fi
 
+if [ -d libsamplerate ]
+then
+	libsamplerate=skipped
+else
+	git clone --depth 1 https://github.com/erikd/libsamplerate.git &&
+	cd libsamplerate &&
+	./autogen.sh &&
+	cd - &&
+	libsamplerate=OK || libsamplerate=fail
+fi
+
 echo
 echo ========== Download summary ==========
 echo "Library path            Status"
@@ -49,4 +60,5 @@ echo "clFFT                   $clFFT"
 echo "unit-test/googletest    $googletest"
 echo "alglib                  $alglib"
 echo "eigen                   $eigen"
+echo "libsamplerate           $libsamplerate"
 
