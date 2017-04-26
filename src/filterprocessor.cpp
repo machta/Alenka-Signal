@@ -4,6 +4,7 @@
 #include "../include/AlenkaSignal/openclprogram.h"
 
 #include <fasttransforms.h>
+#include <clFFT.h>
 
 #include <cmath>
 #include <complex>
@@ -30,6 +31,45 @@ T blackmanWindow(int n, int M)
 	const T a = 0.16, a0 = (1 - a)/2, a1 = 0.5, a2 = a/2, tmp = 2*M_PI*n/(M - 1);
 	return a0 - a1*cos(tmp) + a2*cos(2*tmp);
 }
+
+string clfftErrorCodeToString(clfftStatus code)
+{
+#define CASE(a_) case a_: return #a_
+	switch (code)
+	{
+		CASE(CLFFT_BUGCHECK);
+		CASE(CLFFT_NOTIMPLEMENTED);
+		CASE(CLFFT_TRANSPOSED_NOTIMPLEMENTED);
+		CASE(CLFFT_FILE_NOT_FOUND);
+		CASE(CLFFT_FILE_CREATE_FAILURE);
+		CASE(CLFFT_VERSION_MISMATCH);
+		CASE(CLFFT_INVALID_PLAN);
+		CASE(CLFFT_DEVICE_NO_DOUBLE);
+		CASE(CLFFT_DEVICE_MISMATCH);
+		CASE(CLFFT_ENDSTATUS);
+	default:
+		return AlenkaSignal::OpenCLContext::clErrorCodeToString(code);
+	}
+#undef CASE
+}
+
+void CFCEC(clfftStatus val, string message, const char* file, int line)
+{
+	std::stringstream ss;
+
+	ss << "Unexpected error code: " << clfftErrorCodeToString(val);
+	ss << ", required CLFFT_SUCCESS. ";
+
+	ss << message << " " << file << ":" << line;
+
+	throw std::runtime_error(ss.str());
+}
+
+/**
+ * @brief Simplified error code test for clFFT functions
+ * @param val_ The error code.
+ */
+#define checkClfftErrorCode(val_, message_) if((val_) != CLFFT_SUCCESS) { std::stringstream ss; ss << message_; CFCEC(val_, ss.str(), __FILE__, __LINE__); }
 
 } // namespace
 

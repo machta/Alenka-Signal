@@ -76,14 +76,7 @@ public:
 template<class T>
 int test(SpikedetDataLoader<T>* loader, double fs, DETECTOR_SETTINGS settings, bool originalDecimation = false)
 {
-	clfftStatus errFFT;
-	clfftSetupData setupData;
-
-	errFFT = clfftInitSetupData(&setupData);
-	checkClfftErrorCode(errFFT, "clfftInitSetupData()");
-
-	errFFT = clfftSetup(&setupData);
-	checkClfftErrorCode(errFFT, "clfftSetup()");
+	OpenCLContext::clfftInit();
 
 	int spikes;
 	{
@@ -108,8 +101,7 @@ int test(SpikedetDataLoader<T>* loader, double fs, DETECTOR_SETTINGS settings, b
 		delete dis;
 	}
 
-	errFFT = clfftTeardown();
-	checkClfftErrorCode(errFFT, "clfftTeardown()");
+	OpenCLContext::clfftDeinit();
 
 	cerr << "Spikes detected: " << spikes << endl;
 	return spikes;

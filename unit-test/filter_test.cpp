@@ -17,14 +17,7 @@ namespace
 template<class T>
 void testFilter(Filter<T> filter, int M, int channelCount, const vector<T>& data, const vector<T>& answer, double relativeError = 0.0001)
 {
-	clfftStatus errFFT;
-	clfftSetupData setupData;
-
-	errFFT = clfftInitSetupData(&setupData);
-	checkClfftErrorCode(errFFT, "clfftInitSetupData()");
-
-	errFFT = clfftSetup(&setupData);
-	checkClfftErrorCode(errFFT, "clfftSetup()");
+	OpenCLContext::clfftInit();
 
 	{
 		cl_int err;
@@ -81,8 +74,7 @@ void testFilter(Filter<T> filter, int M, int channelCount, const vector<T>& data
 		checkClErrorCode(err, "clReleaseMemObject");
 	}
 
-	errFFT = clfftTeardown();
-	checkClfftErrorCode(errFFT, "clfftTeardown()");
+	OpenCLContext::clfftDeinit();
 }
 
 template<class T>

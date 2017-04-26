@@ -2,7 +2,6 @@
 #define ALENKASIGNAL_OPENCLCONTEXT_H
 
 #include <CL/cl_gl.h>
-#include <clFFT.h>
 
 #include <string>
 #include <sstream>
@@ -13,12 +12,6 @@
  * @param val_ The error code.
  */
 #define checkClErrorCode(val_, message_) if((val_) != CL_SUCCESS) { std::stringstream ss; ss << message_; AlenkaSignal::OpenCLContext::CCEC(val_, ss.str(), __FILE__, __LINE__); }
-
-/**
- * @brief Simplified error code test for clFFT functions
- * @param val_ The error code.
- */
-#define checkClfftErrorCode(val_, message_) if((val_) != CLFFT_SUCCESS) { std::stringstream ss; ss << message_; AlenkaSignal::OpenCLContext::CFCEC(val_, ss.str(), __FILE__, __LINE__); }
 
 namespace AlenkaSignal
 {
@@ -87,7 +80,9 @@ public:
 	std::string getDeviceInfo() const;
 
 	static void CCEC(cl_int val, std::string message, const char* file, int line);
-	static void CFCEC(clfftStatus val, std::string message, const char* file, int line);
+	static std::string clErrorCodeToString(cl_int code);
+	static void clfftInit();
+	static void clfftDeinit();
 
 	/**
 	 * @brief Prints the content of the data array to a file in a human-readable format.

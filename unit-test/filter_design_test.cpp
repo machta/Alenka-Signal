@@ -30,14 +30,7 @@ void compareDouble(double a, double b)
 template<class T>
 void test(function<void(T, T)> compare, T* answer)
 {
-	clfftStatus errFFT;
-	clfftSetupData setupData;
-
-	errFFT = clfftInitSetupData(&setupData);
-	checkClfftErrorCode(errFFT, "clfftInitSetupData()");
-
-	errFFT = clfftSetup(&setupData);
-	checkClfftErrorCode(errFFT, "clfftSetup()");
+	OpenCLContext::clfftInit();
 
 	{
 		int n = 20;
@@ -83,8 +76,7 @@ void test(function<void(T, T)> compare, T* answer)
 		checkClErrorCode(err, "clReleaseMemObject");
 	}
 
-	errFFT = clfftTeardown();
-	checkClfftErrorCode(errFFT, "clfftTeardown()");
+	OpenCLContext::clfftDeinit();
 }
 
 } // namespace

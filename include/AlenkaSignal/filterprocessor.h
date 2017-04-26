@@ -1,10 +1,12 @@
 #ifndef ALENKASIGNAL_FILTERPROCESSOR_H
 #define ALENKASIGNAL_FILTERPROCESSOR_H
 
-#include <clFFT.h>
+#include <CL/cl_gl.h>
 
 #include <cassert>
 #include <vector>
+
+typedef size_t clfftPlanHandle;
 
 namespace AlenkaSignal
 {

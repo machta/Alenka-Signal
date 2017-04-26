@@ -26,14 +26,7 @@ void compareDouble(double a, double b)
 template<class T>
 void test(function<void(FilterProcessor<T>*)> change, function<void(T, T)> compare)
 {
-	clfftStatus errFFT;
-	clfftSetupData setupData;
-
-	errFFT = clfftInitSetupData(&setupData);
-	checkClfftErrorCode(errFFT, "clfftInitSetupData()");
-
-	errFFT = clfftSetup(&setupData);
-	checkClfftErrorCode(errFFT, "clfftSetup()");
+	OpenCLContext::clfftInit();
 
 	{
 		cl_int err;
@@ -78,8 +71,7 @@ void test(function<void(FilterProcessor<T>*)> change, function<void(T, T)> compa
 		checkClErrorCode(err, "clReleaseMemObject");
 	}
 
-	errFFT = clfftTeardown();
-	checkClfftErrorCode(errFFT, "clfftTeardown()");
+	OpenCLContext::clfftDeinit();
 }
 
 } // namespace
