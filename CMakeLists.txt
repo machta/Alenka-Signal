@@ -33,7 +33,7 @@ set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
 set(LIBS_TO_LINK_ALENKA_SIGNAL ${LIBS_TO_LINK_ALENKA_SIGNAL} PARENT_SCOPE)
 
 # The library.
-file(GLOB SRC1 src/*)
+file(GLOB SRC1 src/* include/AlenkaSignal/*.h)
 file(GLOB SRC2 alglib/src/*.cpp)
 file(GLOB SRC3 libsamplerate/src/*.c)
 add_library(alenka-signal STATIC ${SRC1} ${SRC2} ${SRC3})
@@ -42,6 +42,9 @@ if(MSVC)
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-W4")
 else()
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-Wall -pedantic")# -Wextra -Wconversion")
+
+	#SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} --coverage")
+	#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
 include_directories(include alglib/src eigen libsamplerate/src)
