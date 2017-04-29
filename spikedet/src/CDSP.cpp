@@ -1,5 +1,9 @@
 #include "CDSP.h"
 
+#include <samplerate.h>
+#include <Eigen/Dense>
+#include <fasttransforms.h>
+
 using namespace Eigen;
 using namespace std;
 

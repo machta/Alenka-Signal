@@ -12,18 +12,18 @@ class InputModel : public CInputModel
 	vector<SIGNALTYPE> buffer;
 
 public:
-	InputModel(SpikedetDataLoader<SIGNALTYPE>* loader) : loader(loader)
+	InputModel(int fs, SpikedetDataLoader<SIGNALTYPE>* loader) : loader(loader)
 	{
-		m_fs = loader->channelCount();
+		m_fs = fs;
 		m_countSamples = loader->sampleCount();
 		m_channels.resize(loader->channelCount());
 	}
 
-	virtual void OpenFile(const char* fileName) override {}
-	virtual void OpenFile(const wchar_t* fileName) override {}
-	virtual void CloseFile() override {}
-	virtual bool IsOpen() const override { return true; }
-	virtual bool IsEnd() const override { return false; }
+	virtual void OpenFile(const char* fileName) override { assert(0); }
+	virtual void OpenFile(const wchar_t* fileName) override { assert(0); }
+	virtual void CloseFile() override { assert(0); }
+	virtual bool IsOpen() const override { assert(0); return true; }
+	virtual bool IsEnd() const override { assert(0); return false; }
 
 	virtual wxVector<SIGNALTYPE>* GetSegment(const int& start, const int& end) override
 	{
@@ -71,7 +71,7 @@ Spikedet<T>::~Spikedet()
 template<class T>
 void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges)
 {
-	unique_ptr<CInputModel> model(new InputModel(loader));
+	unique_ptr<CInputModel> model(new InputModel(fs, loader));
 
 	unique_ptr<CSpikeDetector> detector(new CSpikeDetector(nullptr, model.get(), &settings, out, discharges));
 

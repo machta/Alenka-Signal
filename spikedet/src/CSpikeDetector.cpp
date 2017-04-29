@@ -1,6 +1,10 @@
 #include "CSpikeDetector.h"
 //#include "CResultsModel.h"
 
+#include <Eigen/Dense>
+#include <fasttransforms.h>
+#include <interpolation.h>
+
 #include <iostream>
 
 // ------------------------------------------------------------------------------------------------
@@ -234,8 +238,11 @@ void CSpikeDetector::getIndexStartStop(wxVector<int>& indexStart, wxVector<int>&
 		if (indexStop.back() - indexStart.back() < T_seg * fs)
 		{
 			indexStart.pop_back();
-			indexStart.pop_back();
-			indexStop.back() = cntElemInCh;
+			//indexStart.pop_back(); // No idea what this was supposed to mean...
+			//indexStop.back() = cntElemInCh;
+			auto tmp = indexStop.back();
+			indexStop.pop_back();
+			indexStop.back() = tmp;
 		}
 	}
 	else
@@ -637,11 +644,15 @@ wxThread::ExitCode COneChannelDetect::Entry()
 		double temp_elem0 = phat_int[0].front();
 		double temp_elem1 = phat_int[1].front();
 
-		for (i = 0; i < floor(m_settings->m_winsize * m_fs / 2); i++)
-		{
-			phat_int[0].insert(phat_int[0].begin(), temp_elem0);
-			phat_int[1].insert(phat_int[1].begin(), temp_elem1);
-		}
+//		for (i = 0; i < floor(m_settings->m_winsize * m_fs / 2); i++)
+//		{
+//			phat_int[0].insert(phat_int[0].begin(), temp_elem0);
+//			phat_int[1].insert(phat_int[1].begin(), temp_elem1);
+//		}
+// My optimization: insert constants at one to prevent repeated copying in the vector. Makes is about 2.5x faster.
+		int n = floor(m_settings->m_winsize * m_fs / 2);
+		phat_int[0].insert(phat_int[0].begin(), n, temp_elem0);
+		phat_int[1].insert(phat_int[1].begin(), n, temp_elem1);
 
 		temp_elem0 = phat_int[0].back();
 		temp_elem1 = phat_int[1].back();
@@ -758,7 +769,7 @@ double COneChannelDetect::variance(wxVector<double>& data, const double & mean)
 wxVector<bool>* COneChannelDetect::localMaximaDetection(wxVector<SIGNALTYPE>& envelope, const wxVector<double>& prah_int, const double& polyspike_union_time)
 {
 	unsigned int         size = envelope.size();
-	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0);
+	wxVector<bool>* 	 marker1 = new wxVector<bool>(size, 0); // This leak was fixed in ~oneChannelDetectRet().
 	wxVector<int>   	 point[2];
 	wxVector<SIGNALTYPE> seg, seg_s;
 	wxVector<int>        tmp_diff_vector;
@@ -1080,15 +1091,16 @@ void CDetectorOutput::Remove(const wxVector<int>& pos)
 	
 	for (i = 0; i < pos.size(); i++)
 	{
-		if (m_pos.size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+		int index = pos.at(i) - counter;
+		if (static_cast<int>(m_pos.size()) < index || index < 0)
 			continue;
 
-		m_pos.erase(m_pos.begin()+pos.at(i)-counter);
-		m_dur.erase(m_dur.begin()+pos.at(i)-counter);
-		m_chan.erase(m_chan.begin()+pos.at(i)-counter);
-		m_con.erase(m_con.begin()+pos.at(i)-counter);
-		m_weight.erase(m_weight.begin()+pos.at(i)-counter);
-		m_pdf.erase(m_pdf.begin()+pos.at(i)-counter);
+		m_pos.erase(m_pos.begin() + index);
+		m_dur.erase(m_dur.begin() + index);
+		m_chan.erase(m_chan.begin() + index);
+		m_con.erase(m_con.begin() + index);
+		m_weight.erase(m_weight.begin() + index);
+		m_pdf.erase(m_pdf.begin() + index);
 
 		counter++;
 	}
@@ -1135,15 +1147,16 @@ void CDischarges::Remove(const wxVector<int>& pos)
 
 		for (channel = 0; channel < m_countChannels; channel++)
 		{
-			if (m_MV[channel].size() < pos.at(i)-counter || pos.at(i)-counter < 0)
+			int index = pos.at(i) - counter;
+			if (static_cast<int>(m_MV[channel].size()) < index || index < 0)
 				continue;
 
-			m_MV[channel].erase(m_MV[channel].begin()+pos.at(i)-counter);
-			m_MA[channel].erase(m_MA[channel].begin()+pos.at(i)-counter);
-			m_MP[channel].erase(m_MP[channel].begin()+pos.at(i)-counter);
-			m_MW[channel].erase(m_MW[channel].begin()+pos.at(i)-counter);
-			m_MPDF[channel].erase(m_MPDF[channel].begin()+pos.at(i)-counter);
-			m_MD[channel].erase(m_MD[channel].begin()+pos.at(i)-counter);
+			m_MV[channel].erase(m_MV[channel].begin() + index);
+			m_MA[channel].erase(m_MA[channel].begin() + index);
+			m_MP[channel].erase(m_MP[channel].begin() + index);
+			m_MW[channel].erase(m_MW[channel].begin() + index);
+			m_MPDF[channel].erase(m_MPDF[channel].begin() + index);
+			m_MD[channel].erase(m_MD[channel].begin() + index);
 		}
 		counter++;
 	}

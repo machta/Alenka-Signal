@@ -19,8 +19,6 @@
 #include "CInputModel.h"
 #include "CDSP.h"
 
-#include <interpolation.h>
-
 class CDetectorOutput;
 class CMarker;
 class CDischarges;
@@ -132,7 +130,11 @@ public:
 	/// A destructor
 	~oneChannelDetectRet()
 	{
-		/* empty */
+		// These thwo vectors are allocated in localMaximaDetection().
+		delete m_markersHigh;
+
+		if (m_markersHigh != m_markersLow) // Sometimes they point to the same vector.
+			delete m_markersLow;
 	}
 
 } ONECHANNELDETECTRET;

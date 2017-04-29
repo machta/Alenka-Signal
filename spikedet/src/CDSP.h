@@ -17,9 +17,6 @@
 
 #include "CException.h"
 #include "Definitions.h"
-#include <samplerate.h>
-#include <Eigen/Dense>
-#include <fasttransforms.h>
 
 /// long double PI value specifications
 #define PId	3.141592653589793238462643383279502884L 

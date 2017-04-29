@@ -45,7 +45,7 @@ class wxThreadEvent
 	wxString stringVal;
 
 public:
-	wxThreadEvent(int eventType, int id) {}
+	wxThreadEvent(int eventType, int id) { (void)eventType; (void)id;}
 
 	void SetInt(int intCommand)
 	{
@@ -67,6 +67,8 @@ class wxEvtHandler
 {};
 
 inline void wxQueueEvent(wxEvtHandler* dest, wxThreadEvent* event)
-{}
+{
+	(void)dest; (void)event;
+}
 
 #endif // WX_H
