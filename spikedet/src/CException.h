@@ -52,7 +52,7 @@ public:
 	 */
 	virtual const char* what() const throw()
 	{
-		return m_message.mb_str();
+		return m_message.c_str();
 	}
 
 private:
@@ -61,7 +61,7 @@ private:
 	/// a location where exception was thrown
 	wxString   m_whence;
 	/// the time when exception was thrown
-	wxDateTime m_time;
+//	wxDateTime m_time;
 };
 
 #endif

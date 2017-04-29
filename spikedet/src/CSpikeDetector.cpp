@@ -1,5 +1,5 @@
 #include "CSpikeDetector.h"
-#include "CResultsModel.h"
+//#include "CResultsModel.h"
 
 #include <iostream>
 

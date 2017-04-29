@@ -6,7 +6,7 @@
 #include <wx/wx.h>
 #endif
 
-#include "lib/tinyxml/tinyxml.h"
+//#include "lib/tinyxml/tinyxml.h"
 #include "CException.h"
 
 /**
@@ -52,69 +52,69 @@ enum SETTINGS_TYPE
  * Loading and saving settings for the detector from XML.
  * Use TinyXML.
  */
-class CSettingsModel
-{
-	//methods
-public:
-	/**
-	 * A csontructor.
-	 * @param fileName a file name.
-	 */
-	CSettingsModel(const wxString& fileName);
+//class CSettingsModel
+//{
+//	//methods
+//public:
+//	/**
+//	 * A csontructor.
+//	 * @param fileName a file name.
+//	 */
+//	CSettingsModel(const wxString& fileName);
 
-	/**
-	 * A virtual destrcutor.
-	 */
-	virtual ~CSettingsModel();
+//	/**
+//	 * A virtual destrcutor.
+//	 */
+//	virtual ~CSettingsModel();
 	
-	/**
-	 * Load settings from XML file, file must be named "settings.xml".
-	 * @param type flag of type settigns: 1 - default, 2 - saved
-	 * @return pointer to the DETECOR_SETTINGS strucutre containing settings of the detector
-	 */
-	DETECTOR_SETTINGS* LoadSettings(SETTINGS_TYPE type);
+//	/**
+//	 * Load settings from XML file, file must be named "settings.xml".
+//	 * @param type flag of type settigns: 1 - default, 2 - saved
+//	 * @return pointer to the DETECOR_SETTINGS strucutre containing settings of the detector
+//	 */
+//	DETECTOR_SETTINGS* LoadSettings(SETTINGS_TYPE type);
 
-	/**
-	 * Save settings to the XML file - "settings.xml".
-	 * @param settings pointer to the DETECOR_SETTINGS strucutre containing settings of the detector, which are saved
-	 */
-	void SaveSettings(DETECTOR_SETTINGS * settings);
-private:
-	/**
-	 * Return text value form XML element.
-	 * @param e a XML element
-	 * @return a string value
-	 */
-	const char* getTextValue(TiXmlElement* e) const;
+//	/**
+//	 * Save settings to the XML file - "settings.xml".
+//	 * @param settings pointer to the DETECOR_SETTINGS strucutre containing settings of the detector, which are saved
+//	 */
+//	void SaveSettings(DETECTOR_SETTINGS * settings);
+//private:
+//	/**
+//	 * Return text value form XML element.
+//	 * @param e a XML element
+//	 * @return a string value
+//	 */
+//	const char* getTextValue(TiXmlElement* e) const;
 
-	/**
-	 * Set text value to the XML element.
-	 * @param e a XML element
-	 * @param val a integer value
-	 */
-	void setTextValue(TiXmlElement* e, const int& val) const;
+//	/**
+//	 * Set text value to the XML element.
+//	 * @param e a XML element
+//	 * @param val a integer value
+//	 */
+//	void setTextValue(TiXmlElement* e, const int& val) const;
 
-	/**
-	 * Set text value to the XML element.
-	 * @param e a XML element
-	 * @param val a double value
-	 */
-	void setTextValue(TiXmlElement* e, const double& val) const;
+//	/**
+//	 * Set text value to the XML element.
+//	 * @param e a XML element
+//	 * @param val a double value
+//	 */
+//	void setTextValue(TiXmlElement* e, const double& val) const;
 
-	/**
-	 * Set text value to the XML element.
-	 * @param e a XML element
-	 * @param val a string value
-	 */
-	void setTextValue(TiXmlElement* e, const char * val) const;
+//	/**
+//	 * Set text value to the XML element.
+//	 * @param e a XML element
+//	 * @param val a string value
+//	 */
+//	void setTextValue(TiXmlElement* e, const char * val) const;
 
-	// variables
-public:
-	/* none */
-private:
-	/// file name
-	wxString		    m_fileName;
+//	// variables
+//public:
+//	/* none */
+//private:
+//	/// file name
+//	wxString		    m_fileName;
 	
-};
+//};
 
 #endif

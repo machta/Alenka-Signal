@@ -19,7 +19,7 @@
 #include "CInputModel.h"
 #include "CDSP.h"
 
-#include "lib/Alglib/interpolation.h"
+#include <interpolation.h>
 
 class CDetectorOutput;
 class CMarker;

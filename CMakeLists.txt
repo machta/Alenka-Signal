@@ -33,10 +33,11 @@ set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
 set(LIBS_TO_LINK_ALENKA_SIGNAL ${LIBS_TO_LINK_ALENKA_SIGNAL} PARENT_SCOPE)
 
 # The library.
-file(GLOB SRC1 src/* include/AlenkaSignal/*.h)
+file(GLOB SRC1 src/* include/AlenkaSignal/*.h spikedet/src/*.h spikedet/src/wx/*.h)
 file(GLOB SRC2 alglib/src/*.cpp)
 file(GLOB SRC3 libsamplerate/src/*.c)
-add_library(alenka-signal STATIC ${SRC1} ${SRC2} ${SRC3})
+set(SRC_SD spikedet/src/CSpikeDetector.cpp spikedet/src/CDSP.cpp spikedet/src/CException.cpp)
+add_library(alenka-signal STATIC ${SRC1} ${SRC2} ${SRC3} ${SRC_SD})
 
 if(MSVC)
 	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-W4")
@@ -47,7 +48,7 @@ else()
 	#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
-include_directories(include alglib/src eigen libsamplerate/src)
+include_directories(include alglib/src eigen libsamplerate/src spikedet/src)
 
 if(BUILD_TESTS_ALENKA_SIGNAL)
 	add_subdirectory(unit-test)
