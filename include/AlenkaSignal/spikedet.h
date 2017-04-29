@@ -1,7 +1,9 @@
 #ifndef ALENKASIGNAL_SPIKEDET_H
 #define ALENKASIGNAL_SPIKEDET_H
 
-#include <CSpikeDetector.h>
+#include "../../spikedet/src/Definitions.h"
+#include "../../spikedet/src/spikedetoutput.h"
+#include "../../spikedet/src/CSettingsModel.h"
 
 #include <vector>
 #include <atomic>
@@ -9,18 +11,16 @@
 namespace AlenkaSignal
 {
 
-template<class T>
 class SpikedetDataLoader
 {
 public:
 	virtual ~SpikedetDataLoader() {}
 
-	virtual void readSignal(T* data, int64_t firstSample, int64_t lastSample) = 0;
+	virtual void readSignal(SIGNALTYPE* data, int64_t firstSample, int64_t lastSample) = 0;
 	virtual int64_t sampleCount() = 0;
 	virtual int channelCount() = 0;
 };
 
-template<class T>
 class Spikedet
 {
 	const int fs;
@@ -36,7 +36,7 @@ public:
 	Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings);
 	~Spikedet();
 
-	void runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges);
+	void runAnalysis(SpikedetDataLoader* loader, CDetectorOutput* out, CDischarges* discharges);
 
 	/**
 	 * @brief progressPercentage is used to query the completion status of the analysis.
@@ -64,9 +64,6 @@ public:
 	{
 		return DETECTOR_SETTINGS(10, 60, 3.65, 3.65, 0, 5, 4, 300, 50, 0.005, 0.12, 200);
 	}
-
-private:
-
 };
 
 } // namespace AlenkaSignal

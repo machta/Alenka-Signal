@@ -1,5 +1,7 @@
 #include "../include/AlenkaSignal/spikedet.h"
 
+#include "../../spikedet/src/CSpikeDetector.h"
+
 using namespace std;
 using namespace AlenkaSignal;
 
@@ -8,11 +10,11 @@ namespace
 
 class InputModel : public CInputModel
 {
-	SpikedetDataLoader<SIGNALTYPE>* loader;
+	SpikedetDataLoader* loader;
 	vector<SIGNALTYPE> buffer;
 
 public:
-	InputModel(int fs, SpikedetDataLoader<SIGNALTYPE>* loader) : loader(loader)
+	InputModel(int fs, SpikedetDataLoader* loader) : loader(loader)
 	{
 		m_fs = fs;
 		m_countSamples = loader->sampleCount();
@@ -55,21 +57,18 @@ public:
 namespace AlenkaSignal
 {
 
-template<class T>
-Spikedet<T>::Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings)
+Spikedet::Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings)
 	: fs(fs), channelCount(channelCount), originalDecimation(originalDecimation), settings(settings)
 {
 
 }
 
-template<class T>
-Spikedet<T>::~Spikedet()
+Spikedet::~Spikedet()
 {
 
 }
 
-template<class T>
-void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& out, CDischarges*& discharges)
+void Spikedet::runAnalysis(SpikedetDataLoader* loader, CDetectorOutput* out, CDischarges* discharges)
 {
 	unique_ptr<CInputModel> model(new InputModel(fs, loader));
 
@@ -77,8 +76,5 @@ void Spikedet<T>::runAnalysis(SpikedetDataLoader<T>* loader, CDetectorOutput*& o
 
 	detector->Run();
 }
-
-template class Spikedet<float>;
-//template class NewSpikedet<double>;
 
 } // namespace AlenkaSignal
