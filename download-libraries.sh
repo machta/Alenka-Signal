@@ -47,7 +47,7 @@ then
 else
 	git clone --depth 1 https://github.com/erikd/libsamplerate.git &&
 	cd libsamplerate &&
-	./autogen.sh &&
+	./autogen.sh || cp -v Win32/config.h src &&
 	cd - &&
 	libsamplerate=OK || libsamplerate=fail
 fi
