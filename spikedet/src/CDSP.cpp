@@ -82,7 +82,8 @@ wxThread::ExitCode CResamplingThread::Entry()
 	SRC_STATE* state = src_new(SRC_SINC_BEST_QUALITY, 1, &err);
 	SRC_DATA*  src_data = new SRC_DATA();
 
-	src_data->data_in = &m_data->front();
+	vector<float> m_data_float(m_data->begin(), m_data->end());
+	src_data->data_in = m_data_float.data();
 	src_data->data_out = out;
 	src_data->input_frames = m_data->size();
 	src_data->output_frames = m_data->size();

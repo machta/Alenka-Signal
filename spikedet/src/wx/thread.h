@@ -50,7 +50,7 @@ private:
 	std::thread t;
 	int kind;
 	ExitCode entryReturn;
-	std::atomic<bool> stop;
+	std::atomic<bool> stop{false};
 };
 
 
