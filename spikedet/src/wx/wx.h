@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <memory>
 #include <cassert>
+#include <atomic>
 
 template<class T>
 using wxVector = std::vector<T>;
@@ -41,34 +42,52 @@ public:
 
 class wxThreadEvent
 {
-	int intVal;
+	int eventType, id, intVal;
 	wxString stringVal;
 
 public:
-	wxThreadEvent(int eventType, int id) { (void)eventType; (void)id;}
+	wxThreadEvent(int eventType, int id) : eventType(eventType), id(id) {}
 
 	void SetInt(int intCommand)
 	{
 		intVal = intCommand;
+	}
+	int GetInt() const
+	{
+		return intVal;
 	}
 
 	void SetString(const wxString& string)
 	{
 		stringVal = string;
 	}
+	wxString GetString() const
+	{
+		return stringVal;
+	}
 
 	wxThreadEvent* Clone() const
 	{
-		return new wxThreadEvent(0, 0);
+		auto copy = new wxThreadEvent(eventType, id);
+		copy->intVal = intVal;
+		copy->stringVal = stringVal;
+		return copy;
 	}
 };
 
-class wxEvtHandler
-{};
+struct wxEvtHandler
+{
+	std::atomic<int>* progress;
+};
 
 inline void wxQueueEvent(wxEvtHandler* dest, wxThreadEvent* event)
 {
-	(void)dest; (void)event;
+	int p = event->GetInt();
+
+	if (p == -1)
+		p = 100;
+
+	dest->progress->store(p);
 }
 
 #endif // WX_H

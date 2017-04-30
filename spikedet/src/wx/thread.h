@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <cassert>
+#include <atomic>
 
 enum
 {
@@ -35,7 +36,12 @@ public:
 		return entryReturn;
 	}
 
-	virtual bool TestDestroy() { return false; }
+	virtual bool TestDestroy() { return stop; }
+
+	void Stop()
+	{
+		stop = true;
+	}
 
 protected:
 	virtual ExitCode Entry() = 0;
@@ -44,6 +50,7 @@ private:
 	std::thread t;
 	int kind;
 	ExitCode entryReturn;
+	std::atomic<bool> stop;
 };
 
 

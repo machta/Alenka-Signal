@@ -8,6 +8,8 @@
 #include <vector>
 #include <atomic>
 
+class CSpikeDetector;
+
 namespace AlenkaSignal
 {
 
@@ -25,15 +27,13 @@ class Spikedet
 {
 	const int fs;
 	int channelCount;
-	int progressComplete;
-	std::atomic<int> progressCurrent;
-	std::atomic<bool> cancelComputation;
-	bool originalDecimation;
-
+	bool original;
 	DETECTOR_SETTINGS settings;
+	std::atomic<int> progressCurrent;
+	CSpikeDetector* detector = nullptr;
 
 public:
-	Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings);
+	Spikedet(int fs, int channelCount, bool original, DETECTOR_SETTINGS settings);
 	~Spikedet();
 
 	void runAnalysis(SpikedetDataLoader* loader, CDetectorOutput* out, CDischarges* discharges);
@@ -47,7 +47,7 @@ public:
 	 */
 	int progressPercentage() const
 	{
-		return 100*progressCurrent/progressComplete;
+		return progressCurrent;
 	}
 
 	/**
@@ -55,10 +55,7 @@ public:
 	 *
 	 * Thread safe.
 	 */
-	void cancel()
-	{
-		cancelComputation = true;
-	}
+	void cancel();
 
 	static DETECTOR_SETTINGS defaultSettings()
 	{

@@ -57,24 +57,31 @@ public:
 namespace AlenkaSignal
 {
 
-Spikedet::Spikedet(int fs, int channelCount, bool originalDecimation, DETECTOR_SETTINGS settings)
-	: fs(fs), channelCount(channelCount), originalDecimation(originalDecimation), settings(settings)
-{
-
-}
+Spikedet::Spikedet(int fs, int channelCount, bool original, DETECTOR_SETTINGS settings)
+	: fs(fs), channelCount(channelCount), original(original), settings(settings) {}
 
 Spikedet::~Spikedet()
 {
-
+	delete detector;
+	detector = nullptr;
 }
 
 void Spikedet::runAnalysis(SpikedetDataLoader* loader, CDetectorOutput* out, CDischarges* discharges)
 {
+	unique_ptr<wxEvtHandler> eventHandler(new wxEvtHandler);
+	eventHandler->progress = &progressCurrent;
+
 	unique_ptr<CInputModel> model(new InputModel(fs, loader));
 
-	unique_ptr<CSpikeDetector> detector(new CSpikeDetector(nullptr, model.get(), &settings, out, discharges));
+	delete detector;
+	detector = new CSpikeDetector(eventHandler.get(), model.get(), &settings, out, discharges);
 
 	detector->Run();
+}
+
+void Spikedet::cancel()
+{
+	detector->Stop();
 }
 
 } // namespace AlenkaSignal
