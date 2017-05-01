@@ -44,7 +44,7 @@ OpenCLProgram::~OpenCLProgram()
 	checkClErrorCode(err, "clReleaseProgram()");
 }
 
-cl_kernel OpenCLProgram::createKernel(const string& kernelName)
+cl_kernel OpenCLProgram::createKernel(const string& kernelName) const
 {
 	if (compilationSuccessful() == false)
 		throw runtime_error("Cannot create kernel object from an OpenCLProgram that failed to compile.");

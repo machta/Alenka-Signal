@@ -11,10 +11,11 @@ using namespace std;
 namespace
 {
 
-// The NAN value makes the signal line disappear, which makes it apparent that the user made a mistake. It caused problems during compilation on some platforms, so I replaced it.
 template<class T>
-string buildSource(const string& source, const string& headerSource)
+string buildSource(const string& source, const string& headerSource = "", const string& additionalParameters = "")
 {
+	// The NAN value makes the signal line disappear, which makes it apparent that the user made a mistake.
+	// But itt caused problems during compilation on some platforms, so I replaced it with 0.
 	string src;
 
 	if (is_same<T, double>::value)
@@ -34,7 +35,7 @@ float in(int i, PARA)
 
 	src += R"(
 
-__kernel void montage(__global float* _input_, __global float* _output_, int _inputRowLength_, int _inputRowOffset_, int _inputRowCount_, int _outputRowLength_, int _outputRowIndex_, int _outputCopyCount_)
+__kernel void montage(__global float* _input_, __global float* _output_, int _inputRowLength_, int _inputRowOffset_, int _inputRowCount_, int _outputRowLength_, int _outputRowIndex_, int _outputCopyCount_)" + additionalParameters + R"()
 {
 	float out = 0;
 
@@ -55,18 +56,22 @@ __kernel void montage(__global float* _input_, __global float* _output_, int _in
 	}
 })";
 
-	//cerr << src;
 	return src;
 }
 
-// This test matches the most frequently used code: "out = int(1);" and similar.
-
-bool testRegex(const string& source)
+bool parseCopyMontage(const string& source, cl_int* index = nullptr)
 {
 	try
 	{
-		const static regex re(R"(\s*out\s*=\s*in\s*\(\s*\d+\s*\)\s*;\s*)");
-		return regex_match(source, re);
+		const static regex re(R"(\s*out\s*=\s*in\s*\(\s*(\d)+\s*\)\s*;\s*)");
+
+		smatch matches;
+		bool res =  regex_match(source, matches, re);
+
+		if (res && index)
+			*index = stoi(matches[1]);
+
+		return res;
 	}
 	catch (regex_error) {}
 	return false;
@@ -79,9 +84,40 @@ namespace AlenkaSignal
 
 template<class T>
 Montage<T>::Montage(const string& source, OpenCLContext* context, const string& headerSource)
-	: program(OpenCLProgram(buildSource<T>(source, headerSource), context))
 {
-	//logToFile("Constructing montage with " << source.size() << " tracks.");
+	if (parseCopyMontage(source, &index))
+	{
+		if (is_same<T, double>::value)
+		{
+			if (!context->hasCopyOnlyKernelDouble())
+			{
+				string src = buildSource<T>("out = in(_copyIndex_);", "", ", _copyIndex_");
+				context->setCopyOnlyKernelDouble(new OpenCLProgram(src, context));
+			}
+
+			kernel = context->copyOnlyKernelDouble();
+		}
+		else
+		{
+			if (!context->hasCopyOnlyKernelFloat())
+			{
+				string src = buildSource<T>("out = in(_copyIndex_);", "", ", _copyIndex_");
+				context->setCopyOnlyKernelFloat(new OpenCLProgram(src, context));
+			}
+
+			kernel = context->copyOnlyKernelFloat();
+		}
+	}
+	else
+	{
+		program = new OpenCLProgram(buildSource<T>(source, headerSource), context);
+	}
+}
+
+template<class T>
+Montage<T>::Montage(const std::vector<unsigned char>* binary, OpenCLContext* context)
+{
+	program = new OpenCLProgram(binary, context);
 }
 
 template<class T>
@@ -92,6 +128,8 @@ Montage<T>::~Montage()
 		cl_int err = clReleaseKernel(kernel);
 		checkClErrorCode(err, "clReleaseKernel()");
 	}
+
+	delete program;
 }
 
 template<class T>
@@ -99,7 +137,7 @@ bool Montage<T>::test(const string& source, OpenCLContext* context, string* erro
 {
 	//logToFile("Testing montage code.");
 
-	if (testRegex(source))
+	if (parseCopyMontage(source))
 		return true;
 
 	// Use the OpenCL compiler to test the source.

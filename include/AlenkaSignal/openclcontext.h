@@ -16,6 +16,8 @@
 namespace AlenkaSignal
 {
 
+class OpenCLProgram;
+
 /**
  * @brief A wrapper for cl_context.
  *
@@ -26,6 +28,8 @@ class OpenCLContext
 	cl_context context;
 	cl_platform_id platformId;
 	cl_device_id deviceId;
+	OpenCLProgram* copyOnlyProgramFloat = nullptr;
+	OpenCLProgram* copyOnlyProgramDouble = nullptr;
 
 public:
 	/**
@@ -78,6 +82,14 @@ public:
 	 * clGetDeviceInfo() is used to retrieve this info.
 	 */
 	std::string getDeviceInfo() const;
+
+	bool hasCopyOnlyKernelFloat() const { return copyOnlyProgramFloat != nullptr; }
+	void setCopyOnlyKernelFloat(OpenCLProgram* val) { copyOnlyProgramFloat = val; }
+	cl_kernel copyOnlyKernelFloat() const;
+
+	bool hasCopyOnlyKernelDouble() const { return copyOnlyProgramDouble != nullptr; }
+	void setCopyOnlyKernelDouble(OpenCLProgram* val) { copyOnlyProgramDouble = val; }
+	cl_kernel copyOnlyKernelDouble() const;
 
 	static void CCEC(cl_int val, std::string message, const char* file, int line);
 	static std::string clErrorCodeToString(cl_int code);

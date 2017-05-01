@@ -56,6 +56,13 @@ void MontageProcessor<T>::process(const vector<Montage<T>*>& montage, cl_mem inB
 		err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &outputCopyCount);
 		checkClErrorCode(err, "clSetKernelArg()");
 
+		if (montage[i]->isCopyMontage())
+		{
+			cl_int copyIndex = montage[i]->copyMontageIndex();
+			err = clSetKernelArg(montageKernel, pi++, sizeof(cl_int), &copyIndex);
+			checkClErrorCode(err, "clSetKernelArg()");
+		}
+
 		size_t globalWorkSize = outputRowLength;
 
 		err = clEnqueueNDRangeKernel(queue, montageKernel, 1, nullptr, &globalWorkSize, nullptr, 0, nullptr, nullptr);

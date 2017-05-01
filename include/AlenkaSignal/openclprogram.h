@@ -38,7 +38,7 @@ public:
 	 * The returned kernel object is independent of this class and the caller
 	 * takes its ownership.
 	 */
-	cl_kernel createKernel(const std::string& kernelName);
+	cl_kernel createKernel(const std::string& kernelName) const;
 
 	/**
 	 * @brief Returns cl_program compilation status.

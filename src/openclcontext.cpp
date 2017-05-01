@@ -1,5 +1,8 @@
 #include "../include/AlenkaSignal/openclcontext.h"
 
+#include "../include/AlenkaSignal/openclprogram.h"
+#include "../include/AlenkaSignal/montage.h"
+
 #include <clFFT.h>
 
 #include <algorithm>
@@ -72,6 +75,9 @@ OpenCLContext::OpenCLContext(unsigned int platform, unsigned int device, vector<
 
 OpenCLContext::~OpenCLContext()
 {
+	delete copyOnlyProgramFloat;
+	delete copyOnlyProgramDouble;
+
 	cl_int err = clReleaseContext(context);
 	checkClErrorCode(err, "clReleaseContext()");
 
@@ -238,6 +244,16 @@ string OpenCLContext::getDeviceInfo() const
 	str += ss.str();
 
 	return str;
+}
+
+cl_kernel OpenCLContext::copyOnlyKernelFloat() const
+{
+	return copyOnlyProgramFloat->createKernel("montage");
+}
+
+cl_kernel OpenCLContext::copyOnlyKernelDouble() const
+{
+	return copyOnlyProgramDouble->createKernel("montage");
 }
 
 void OpenCLContext::CCEC(cl_int val, string message, const char* file, int line)

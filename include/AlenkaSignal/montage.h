@@ -26,8 +26,9 @@ namespace AlenkaSignal
 template<class T>
 class Montage
 {
-	OpenCLProgram program;
+	OpenCLProgram* program = nullptr;
 	cl_kernel kernel = nullptr;
+	cl_int index;
 
 public:
 	/**
@@ -35,7 +36,7 @@ public:
 	 * @param sources OpenCL source code of the montage.
 	 */
 	Montage(const std::string& source, OpenCLContext* context, const std::string& headerSource = "");
-	Montage(const std::vector<unsigned char>* binary, OpenCLContext* context) : program(OpenCLProgram(binary, context)) {}
+	Montage(const std::vector<unsigned char>* binary, OpenCLContext* context);
 	~Montage();
 
 	/**
@@ -44,14 +45,20 @@ public:
 	cl_kernel getKernel()
 	{
 		if (kernel == nullptr)
-			kernel = program.createKernel("montage");
+			kernel = program->createKernel("montage");
 		return kernel;
 	}
 
 	std::vector<unsigned char>* getBinary()
 	{
-		return program.getBinary();
+		if (program)
+			return program->getBinary();
+		else
+			return nullptr;
 	}
+
+	bool isCopyMontage() const { return program == nullptr; }
+	cl_int copyMontageIndex() const { return index; }
 
 	/**
 	 * @brief Tests the source code of the montage.
