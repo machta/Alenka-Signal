@@ -1,8 +1,6 @@
 # Build Google Test library.
-set(BUILD_GMOCK OFF)
-set(BUILD_GTEST ON)
-add_subdirectory(googletest)
-include_directories(../include googletest/googletest/include)
+set(SRC_GTEST googletest/googletest/src/gtest-all.cc googletest/googletest/src/gtest_main.cc)
+include_directories(googletest/googletest/include googletest/googletest)
 
 # alenka-file
 set(Boost_INCLUDE_DIR "")
@@ -16,8 +14,10 @@ set(TEST_OPENCL_DEVICE 0 CACHE STRING "OpenCL device id to use for the test.")
 add_definitions(-DOPENCL_PLATFORM=${TEST_OPENCL_PLATFORM} -DOPENCL_DEVICE=${TEST_OPENCL_DEVICE})
 
 file(GLOB SRC *.cpp)
-add_executable(unit-test ${SRC})
-target_link_libraries(unit-test ${LIBS_TO_LINK_ALENKA_SIGNAL} ${LIBS_TO_LINK_ALENKA_FILE} gtest gtest_main)
+add_executable(unit-test ${SRC} ${SRC_GTEST})
+
+find_package (Threads)
+target_link_libraries(unit-test ${LIBS_TO_LINK_ALENKA_SIGNAL} ${LIBS_TO_LINK_ALENKA_FILE} ${CMAKE_THREAD_LIBS_INIT})
 
 if(MSVC)
 	set_source_files_properties(${SRC} PROPERTIES COMPILE_FLAGS "-W4")
