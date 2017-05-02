@@ -63,7 +63,7 @@ bool parseCopyMontage(const string& source, cl_int* index = nullptr)
 {
 	try
 	{
-		const static regex re(R"(\s*out\s*=\s*in\s*\(\s*(\d)+\s*\)\s*;\s*)");
+		const static regex re(R"(\s*out\s*=\s*in\s*\(\s*(\d+)\s*\)\s*;\s*)");
 
 		smatch matches;
 		bool res =  regex_match(source, matches, re);
