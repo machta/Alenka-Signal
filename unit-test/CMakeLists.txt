@@ -2,12 +2,6 @@
 set(SRC_GTEST googletest/googletest/src/gtest-all.cc googletest/googletest/src/gtest_main.cc)
 include_directories(googletest/googletest/include googletest/googletest)
 
-# alenka-file
-set(Boost_INCLUDE_DIR "")
-set(ALENKA_FILE_DIR ../../Alenka-File CACHE PATH "Path to Alenka-File source.")
-add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
-include_directories(${ALENKA_FILE_DIR}/include)
-
 # The tests.
 set(TEST_OPENCL_PLATFORM 0 CACHE STRING "OpenCL platform id to use for the test.")
 set(TEST_OPENCL_DEVICE 0 CACHE STRING "OpenCL device id to use for the test.")

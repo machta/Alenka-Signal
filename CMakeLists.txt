@@ -22,6 +22,12 @@ endif()
 find_package(OpenCL)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
+# Alenka-File
+set(Boost_INCLUDE_DIR "")
+set(ALENKA_FILE_DIR ../Alenka-File CACHE PATH "Path to Alenka-File source.")
+add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
+include_directories(${ALENKA_FILE_DIR}/include ${ALENKA_FILE_DIR}/boost)
+
 # First build all the library dependencies.
 set(BUILD_LOADLIBRARIES off CACHE BOOL "")
 set(BUILD_EXAMPLES off CACHE BOOL "")
