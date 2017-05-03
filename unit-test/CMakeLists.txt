@@ -2,6 +2,9 @@
 set(SRC_GTEST googletest/googletest/src/gtest-all.cc googletest/googletest/src/gtest_main.cc)
 include_directories(googletest/googletest/include googletest/googletest)
 
+# Alenka-File
+add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
+
 # The tests.
 set(TEST_OPENCL_PLATFORM 0 CACHE STRING "OpenCL platform id to use for the test.")
 set(TEST_OPENCL_DEVICE 0 CACHE STRING "OpenCL device id to use for the test.")

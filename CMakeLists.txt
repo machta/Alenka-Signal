@@ -24,8 +24,7 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Alenka-File
 set(Boost_INCLUDE_DIR "")
-set(ALENKA_FILE_DIR ../Alenka-File CACHE PATH "Path to Alenka-File source.")
-add_subdirectory(${ALENKA_FILE_DIR} alenka-file)
+get_filename_component(ALENKA_FILE_DIR ../Alenka-File REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 include_directories(${ALENKA_FILE_DIR}/include ${ALENKA_FILE_DIR}/boost)
 
 # First build all the library dependencies.
