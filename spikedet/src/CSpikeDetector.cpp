@@ -302,7 +302,7 @@ void CSpikeDetector::spikeDetector(wxVector<SIGNALTYPE>*& data, const int& count
 	// If sample rate is > "decimation" the signal is decimated => 200Hz default.
 	if (fs > decimation)
 	{
-		CDSP::Resample(data, countChannels, fs, decimation);
+		CDSP::Resample(data, countChannels, fs, decimation, m_settings->m_original);
 		
 		fs = decimation;
 		winsize  = m_settings->m_winsize * fs;

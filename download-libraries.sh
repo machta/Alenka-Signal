@@ -52,6 +52,14 @@ else
 	libsamplerate=OK || libsamplerate=fail
 fi
 
+if [ -d SignalResampler ]
+then
+	SignalResampler=skipped
+else
+	git clone --depth 1 https://github.com/terrygta/SignalResampler.git &&
+	SignalResampler=OK || SignalResampler=fail
+fi
+
 echo
 echo ========== Download summary ==========
 echo "Library path            Status"
@@ -61,4 +69,5 @@ echo "unit-test/googletest    $googletest"
 echo "alglib                  $alglib"
 echo "eigen                   $eigen"
 echo "libsamplerate           $libsamplerate"
+echo "SignalResampler         $SignalResampler"
 

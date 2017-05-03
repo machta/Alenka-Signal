@@ -27,6 +27,8 @@ public:
 	double m_polyspike_union_time ;	  // (-pt)
 	int    m_decimation;
 	
+	bool   m_original = true;
+
 	/// A constructor
 	detectorSettings(int band_low, int band_high, double k1, double k2, double k3, int winsize, double noverlap, int buffering, int main_hum_freq,
 					 double discharge_tol, double polyspike_union_time, int decimation)

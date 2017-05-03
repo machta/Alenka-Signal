@@ -36,4 +36,5 @@ clFFT
 alglib
 eigen
 libsamplerate
+SignalResampler
 

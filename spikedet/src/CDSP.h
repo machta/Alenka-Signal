@@ -64,7 +64,7 @@ public:
 	 * @param actualFS actual sample rate
 	 * @param requiredFS required sample rate
 	 */
-	static void Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const int& actualFS, const int& requiredFS);
+	static void Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const int& actualFS, const int& requiredFS, bool original);
 
 	/**
 	 * Digital signal filtering 10-60Hz
@@ -165,7 +165,7 @@ public:
 	 * @param actFS actual sample rate
 	 * @param requiredFS required sample rate
 	 */
-	CResamplingThread(wxVector<SIGNALTYPE>* data, const int& actFS, const int& requiredFS);
+	CResamplingThread(wxVector<SIGNALTYPE>* data, const int& actFS, const int& requiredFS, bool original);
 
 	/**
 	 * A virtual desctructor.
@@ -188,6 +188,7 @@ private:
 	int 			 	  m_requiredFS;
 	/// input / output data
 	wxVector<SIGNALTYPE>* m_data;
+	bool m_original;
 };
 
 /**

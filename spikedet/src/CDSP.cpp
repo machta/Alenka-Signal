@@ -3,13 +3,14 @@
 #include <samplerate.h>
 #include <Eigen/Dense>
 #include <fasttransforms.h>
+#include <resample.h>
 
 using namespace Eigen;
 using namespace std;
 
 // Digital signal resampling ----------------------------------------------------------------------
 /// Method for digital signal resampling - In this program is used for decimating.
-void CDSP::Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const int& actualFS, const int& requiredFS)
+void CDSP::Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const int& actualFS, const int& requiredFS, bool original)
 {
 	int i, j, outputSize;
 	double val;
@@ -19,7 +20,7 @@ void CDSP::Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const
 	// run threads
 	for (i = 0; i < countChannels; i++)
 	{
-		threads[i] = new CResamplingThread(&data[i], actualFS, requiredFS);
+		threads[i] = new CResamplingThread(&data[i], actualFS, requiredFS, original);
 		threads[i]->Run();
 	}
 
@@ -59,12 +60,13 @@ void CDSP::Resample(wxVector<SIGNALTYPE>*& data, const int& countChannels, const
 // CResampling
 // --------------------------
 /// A constructor.
-CResamplingThread::CResamplingThread(wxVector<SIGNALTYPE>* data, const int& actFS, const int& requiredFS)
+CResamplingThread::CResamplingThread(wxVector<SIGNALTYPE>* data, const int& actFS, const int& requiredFS, bool original)
 	: wxThread(wxTHREAD_JOINABLE)
 {
 	m_actFS = actFS;
 	m_requiredFS = requiredFS;
 	m_data = data;
+	m_original = original;
 }
 
 /// A virtual destructor.
@@ -76,6 +78,14 @@ CResamplingThread::~CResamplingThread()
 /// This is the entry point of the thread.
 wxThread::ExitCode CResamplingThread::Entry()
 {
+	if (!m_original)
+	{
+		vector<double> m_data_double(m_data->begin(), m_data->end()), output;
+		resample(m_requiredFS, m_actFS, m_data_double, output);
+		m_data->assign(output.begin(), output.end());
+		return 0;
+	}
+
 	int err, ret;
 	float * out = new float[m_data->size()];
 

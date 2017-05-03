@@ -58,7 +58,10 @@ namespace AlenkaSignal
 {
 
 Spikedet::Spikedet(int fs, int channelCount, bool original, DETECTOR_SETTINGS settings)
-	: fs(fs), channelCount(channelCount), original(original), settings(settings) {}
+	: fs(fs), channelCount(channelCount), original(original), settings(settings)
+{
+	this->settings.m_original = original;
+}
 
 Spikedet::~Spikedet()
 {
