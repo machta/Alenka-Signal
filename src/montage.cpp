@@ -91,8 +91,13 @@ Montage<T>::Montage(const string& source, OpenCLContext* context, const string& 
 		{
 			if (!context->hasCopyOnlyKernelDouble())
 			{
-				string src = buildSource<T>("out = in(_copyIndex_);", "", ", _copyIndex_");
-				context->setCopyOnlyKernelDouble(new OpenCLProgram(src, context));
+				string src = buildSource<T>("out = in(_copyIndex_);", "", ", int _copyIndex_");
+
+				OpenCLProgram* p = new OpenCLProgram(src, context);
+				if (!p->compilationSuccessful())
+					cerr << "Copy only kernel compilation error: " << endl << p->getCompilationLog();
+
+				context->setCopyOnlyKernelDouble(p);
 			}
 
 			kernel = context->copyOnlyKernelDouble();
@@ -101,8 +106,13 @@ Montage<T>::Montage(const string& source, OpenCLContext* context, const string& 
 		{
 			if (!context->hasCopyOnlyKernelFloat())
 			{
-				string src = buildSource<T>("out = in(_copyIndex_);", "", ", _copyIndex_");
-				context->setCopyOnlyKernelFloat(new OpenCLProgram(src, context));
+				string src = buildSource<T>("out = in(_copyIndex_);", "", ", int _copyIndex_");
+
+				OpenCLProgram* p = new OpenCLProgram(src, context);
+				if (!p->compilationSuccessful())
+					cerr << "Copy only kernel compilation error: " << endl << p->getCompilationLog();
+
+				context->setCopyOnlyKernelFloat(p);
 			}
 
 			kernel = context->copyOnlyKernelFloat();
