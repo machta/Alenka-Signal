@@ -1,6 +1,6 @@
 #include "../include/AlenkaSignal/spikedet.h"
 
-#include "../../spikedet/src/CSpikeDetector.h"
+#include "../spikedet/src/CSpikeDetector.h"
 
 using namespace std;
 using namespace AlenkaSignal;

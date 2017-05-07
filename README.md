@@ -2,7 +2,7 @@
 
 ### Requirments
 * git
-* cmake 3.1+ (for Ubuntu 14 download the latest version)
+* cmake 3.1 (for Ubuntu 14 download the latest version)
 * g++ or Microsoft Visual C++ 2015 compiler
 * OpenCL 1.1
 
