@@ -15,7 +15,7 @@ using namespace std;
 
 namespace
 {
-template <typename T>
+template<typename T>
 string errorCodeToString(T val)
 {
 	using namespace std;

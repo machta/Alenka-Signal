@@ -8,7 +8,7 @@
 namespace AlenkaSignal
 {
 
-template <class T>
+template<class T>
 class Montage;
 
 /**

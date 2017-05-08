@@ -2,8 +2,8 @@
 #define	CResultsModel_H
 
 #include "CSpikeDetector.h"
-#include "lib/tinyxml/tinyxml.h"
-#include "lib/matio/matio.h"
+//#include "lib/tinyxml/tinyxml.h"
+#include <matio.h>
 
 /**
  * Static class for saving and loading results of the detector.
@@ -29,7 +29,7 @@ public:
 	 * @param out pointer to \ref CDetectorOutput
 	 * @param disch pointer to \ref CDischarges
 	 */
-	static void SaveResultsXML(const char* fileName, const CDetectorOutput* out, const CDischarges* disch);
+//	static void SaveResultsXML(const char* fileName, const CDetectorOutput* out, const CDischarges* disch);
 	
 	/**
 	 * Save results: \ref CDetectorOutput and \ref CDischarges to the XML file.
@@ -38,7 +38,7 @@ public:
 	 * @param out input data - pointer to \ref CDetectorOutput
 	 * @param disch input data - pointer to \ref CDischarges
 	 */
-	static void SaveResultsXML(const wchar_t* fileName, const CDetectorOutput* out, const CDischarges* disch);
+//	static void SaveResultsXML(const wchar_t* fileName, const CDetectorOutput* out, const CDischarges* disch);
 
 	/**
 	 * Load results: \ref CDetectorOutput and \ref CDischarges from XML file.
@@ -46,7 +46,7 @@ public:
 	 * @param out output pointer where is saved \ref CDetectorOutput
 	 * @param disch output pointer where is saved \ref CDischarges
 	 */
-	static void LoadResultsXML(const char* fileName, CDetectorOutput*& out, CDischarges*& disch);
+//	static void LoadResultsXML(const char* fileName, CDetectorOutput*& out, CDischarges*& disch);
 	
 	/**
 	 * Load results: \ref CDetectorOutput and \ref CDischarges from XML file.
@@ -55,7 +55,7 @@ public:
 	 * @param out output pointer where is saved \ref CDetectorOutput
 	 * @param disch output pointer where is saved \ref CDischarges
 	 */
-	static void LoadResultsXML(const wchar_t* fileName, CDetectorOutput*& out, CDischarges*& disch);
+//	static void LoadResultsXML(const wchar_t* fileName, CDetectorOutput*& out, CDischarges*& disch);
 
 	/**
 	 * Save results: \ref CDetectorOutput and \ref CDischarges to the MAT file.
@@ -100,14 +100,14 @@ private:
 	 * @param root TiXmlElement root elem in which si connect output struct.
 	 * @param out input data - pointer to \ref CDetectorOutput
 	 */
-	static void saveDetectorOutputXML(TiXmlElement*& root, const CDetectorOutput* out);
+//	static void saveDetectorOutputXML(TiXmlElement*& root, const CDetectorOutput* out);
 	
 	/**
 	 * Create XML struct from \ref CDischarges and save it to the TiXmlDocument
 	 * @param root TiXmlElement root elem in which si connect output struct.
 	 * @param disch data - pointer to \ref CDischarges
 	 */
-	static void saveDischargesXML(TiXmlElement*& root, const CDischarges* disch);
+//	static void saveDischargesXML(TiXmlElement*& root, const CDischarges* disch);
 
 	/**
 	 * Convert WCHAR_T to CHAR. Is using for converting path of files.
@@ -121,14 +121,14 @@ private:
 	 * @param root TiXmlElement root elem elem where are find data.
 	 * @param out output pointer to \ref CDetectorOutput
 	 */
-	static void loadDetectorOutputXML(TiXmlElement*& root, CDetectorOutput*& out);
+//	static void loadDetectorOutputXML(TiXmlElement*& root, CDetectorOutput*& out);
 	
 	/**
 	 * Load data to \ref CDischarges
 	 * @param root TiXmlElement root elem where are find data.
 	 * @param disch output pointer to \ref CDischarges
 	 */
-	static void loadDischargesXML(TiXmlElement*& root, CDischarges*& disch);
+//	static void loadDischargesXML(TiXmlElement*& root, CDischarges*& disch);
 
 	/**
 	 * Save \ref CDetectorOutput to the MAT file.

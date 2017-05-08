@@ -16,61 +16,7 @@ namespace
 
 const string PATH = "unit-test/data/";
 
-class DataFileLoader : public SpikedetDataLoader
-{
-public:
-	DataFile* file;
-
-	DataFileLoader(DataFile* file) : file(file) {}
-
-	virtual void readSignal(SIGNALTYPE* data, int64_t firstSample, int64_t lastSample) override
-	{
-		file->readSignal(data, firstSample, lastSample);
-	}
-	virtual int64_t sampleCount() override
-	{
-		return file->getSamplesRecorded();
-	}
-	virtual int channelCount() override
-	{
-		return file->getChannelCount();
-	}
-};
-
-class VectorLoader : public SpikedetDataLoader
-{
-public:
-	vector<SIGNALTYPE> signal;
-	int channels;
-	int length;
-
-	VectorLoader(vector<SIGNALTYPE> signal, int channels) : signal(signal), channels(channels), length(signal.size()/channels)
-	{
-		assert(signal.size() == channels*length);
-	}
-
-	virtual void readSignal(SIGNALTYPE* data, int64_t firstSample, int64_t lastSample) override
-	{
-		int64_t len = lastSample - firstSample + 1;
-		for (int j = 0; j < channels; j++)
-			for (int64_t i = firstSample; i <= lastSample; i++)
-			{
-				SIGNALTYPE sample = i < 0 || i >= length ? 0 : signal.at(j*length + i);
-
-				data[j*len + i - firstSample] = sample;
-			}
-	}
-	virtual int64_t sampleCount() override
-	{
-		return length;
-	}
-	virtual int channelCount() override
-	{
-		return channels;
-	}
-};
-
-int test(SpikedetDataLoader* loader, double fs, bool original, DETECTOR_SETTINGS settings = Spikedet::defaultSettings())
+int test(AbstractSpikedetLoader<SIGNALTYPE>* loader, double fs, bool original, DETECTOR_SETTINGS settings = Spikedet::defaultSettings())
 {
 	unique_ptr<CDetectorOutput> out(new CDetectorOutput);
 	unique_ptr<CDischarges> dis(new CDischarges(loader->channelCount()));
@@ -117,7 +63,7 @@ double relativeError(int res, int sol)
 TEST(spikedet_test_optimized, IED_P001_default)
 {
 	EDF file(PATH + "IED_P001.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -127,7 +73,7 @@ TEST(spikedet_test_optimized, IED_P001_default)
 TEST(spikedet_test_optimized, IED_P002_default)
 {
 	EDF file(PATH + "IED_P002.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -137,7 +83,7 @@ TEST(spikedet_test_optimized, IED_P002_default)
 TEST(spikedet_test_optimized, IED_P003_default)
 {
 	EDF file(PATH + "IED_P003.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -147,7 +93,7 @@ TEST(spikedet_test_optimized, IED_P003_default)
 TEST(spikedet_test_optimized, IED_P004_default)
 {
 	EDF file(PATH + "IED_P004.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -157,7 +103,7 @@ TEST(spikedet_test_optimized, IED_P004_default)
 TEST(spikedet_test_optimized, IED_P005_default)
 {
 	EDF file(PATH + "IED_P005.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -167,7 +113,7 @@ TEST(spikedet_test_optimized, IED_P005_default)
 TEST(spikedet_test_optimized, IED_P006_default)
 {
 	EDF file(PATH + "IED_P006.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -177,7 +123,7 @@ TEST(spikedet_test_optimized, IED_P006_default)
 TEST(spikedet_test_optimized, IED_P007_default)
 {
 	EDF file(PATH + "IED_P007.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), false); }));
@@ -189,7 +135,7 @@ TEST(spikedet_test_optimized, IED_P007_default)
 TEST(spikedet_test, IED_P001_default)
 {
 	EDF file(PATH + "IED_P001.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -199,7 +145,7 @@ TEST(spikedet_test, IED_P001_default)
 TEST(spikedet_test, IED_P002_default)
 {
 	EDF file(PATH + "IED_P002.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -209,7 +155,7 @@ TEST(spikedet_test, IED_P002_default)
 TEST(spikedet_test, IED_P003_default)
 {
 	EDF file(PATH + "IED_P003.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -219,7 +165,7 @@ TEST(spikedet_test, IED_P003_default)
 TEST(spikedet_test, IED_P004_default)
 {
 	EDF file(PATH + "IED_P004.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -229,7 +175,7 @@ TEST(spikedet_test, IED_P004_default)
 TEST(spikedet_test, IED_P005_default)
 {
 	EDF file(PATH + "IED_P005.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -239,7 +185,7 @@ TEST(spikedet_test, IED_P005_default)
 TEST(spikedet_test, IED_P006_default)
 {
 	EDF file(PATH + "IED_P006.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -249,7 +195,7 @@ TEST(spikedet_test, IED_P006_default)
 TEST(spikedet_test, IED_P007_default)
 {
 	EDF file(PATH + "IED_P007.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	int spikes;
 
 	EXPECT_NO_THROW(printException([&] () { spikes = test(&loader, file.getSamplingFrequency(), true); }));
@@ -260,7 +206,7 @@ TEST(spikedet_test, index_bug)
 {
 	// This tests the bug when computing segment indices.
 	EDF file(PATH + "edfsample.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test(&loader, file.getSamplingFrequency(), true); }));
 }
 
@@ -268,7 +214,7 @@ TEST(spikedet_test, zeroChannel_bug0)
 {
 	// This tests the strange case when you get nan values and it causes an exception.
 	EDF file(PATH + "zeroChannel.edf");
-	DataFileLoader loader(&file);
+	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test(&loader, file.getSamplingFrequency(), true); }));
 }
 
@@ -280,7 +226,7 @@ TEST(spikedet_test, zeroChannel_bug1)
 	for (int i = len; i < 2*len; i++)
 		signal[i] = i;
 
-	VectorLoader loader(signal, 3);
+	VectorSpikedetLoader<SIGNALTYPE> loader(signal, 3);
 	EXPECT_NO_THROW(printException([&] () { test(&loader, 200, true); }));
 }
 

@@ -13,231 +13,231 @@ CResultsModel::~CResultsModel()
 }
 
 /// Save results: @see #CDetectorOutput and @see #CDischarges to the XML file.
-void CResultsModel::SaveResultsXML(const wchar_t* fileName, const CDetectorOutput* out, const CDischarges* disch)
-{
-	char buffer[2048];
-	convertWCHARTtoCHAR(buffer, fileName);
-	SaveResultsXML(buffer, out, disch);
-}
+//void CResultsModel::SaveResultsXML(const wchar_t* fileName, const CDetectorOutput* out, const CDischarges* disch)
+//{
+//	char buffer[2048];
+//	convertWCHARTtoCHAR(buffer, fileName);
+//	SaveResultsXML(buffer, out, disch);
+//}
 
 /// Save results: @see #CDetectorOutput and @see #CDischarges to the XML file.
-void CResultsModel::SaveResultsXML(const char* fileName, const CDetectorOutput* out, const CDischarges* disch)
-{
-	TiXmlDocument     doc;
-	TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );
-	TiXmlElement*     root = new TiXmlElement("spikedetector");
+//void CResultsModel::SaveResultsXML(const char* fileName, const CDetectorOutput* out, const CDischarges* disch)
+//{
+//	TiXmlDocument     doc;
+//	TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );
+//	TiXmlElement*     root = new TiXmlElement("spikedetector");
 
-	doc.LinkEndChild(decl);
-	doc.LinkEndChild(root);
-	saveDetectorOutputXML(root, out);
-	saveDischargesXML(root, disch);
+//	doc.LinkEndChild(decl);
+//	doc.LinkEndChild(root);
+//	saveDetectorOutputXML(root, out);
+//	saveDischargesXML(root, disch);
 
-	doc.SaveFile(fileName);
-}
+//	doc.SaveFile(fileName);
+//}
 
 /// Create XML struct from @see #CDetectorOutput and save it to the TiXmlDocument
-void CResultsModel::saveDetectorOutputXML(TiXmlElement*& root, const CDetectorOutput* out)
-{
-	unsigned countRecords = out->m_pos.size();
-	unsigned i;
+//void CResultsModel::saveDetectorOutputXML(TiXmlElement*& root, const CDetectorOutput* out)
+//{
+//	unsigned countRecords = out->m_pos.size();
+//	unsigned i;
 
-	TiXmlElement* subroot = new TiXmlElement("Output");
-	TiXmlElement* pos;
+//	TiXmlElement* subroot = new TiXmlElement("Output");
+//	TiXmlElement* pos;
 	
-	root->LinkEndChild(subroot);
-	for (i = 0; i < countRecords; i++)
-	{
-		pos = new TiXmlElement("Position");
-		subroot->LinkEndChild(pos);
+//	root->LinkEndChild(subroot);
+//	for (i = 0; i < countRecords; i++)
+//	{
+//		pos = new TiXmlElement("Position");
+//		subroot->LinkEndChild(pos);
 
-		pos->SetDoubleAttribute("pos", out->m_pos.at(i));
-		pos->SetAttribute("chan", out->m_chan.at(i));
-		pos->SetDoubleAttribute("dur", out->m_dur.at(i));
-		pos->SetDoubleAttribute("con", out->m_con.at(i));
-		pos->SetDoubleAttribute("weight", out->m_weight.at(i));
-		pos->SetDoubleAttribute("pdf", out->m_pdf.at(i));
-	}
-}
+//		pos->SetDoubleAttribute("pos", out->m_pos.at(i));
+//		pos->SetAttribute("chan", out->m_chan.at(i));
+//		pos->SetDoubleAttribute("dur", out->m_dur.at(i));
+//		pos->SetDoubleAttribute("con", out->m_con.at(i));
+//		pos->SetDoubleAttribute("weight", out->m_weight.at(i));
+//		pos->SetDoubleAttribute("pdf", out->m_pdf.at(i));
+//	}
+//}
 
 /// Create XML struct from @see #CDischarges and save it to the TiXmlDocument
-void CResultsModel::saveDischargesXML(TiXmlElement*& root, const CDischarges* disch)
-{
-	unsigned countRecords = disch->m_MP[0].size();
-	unsigned countChannels = disch->GetCountChannels();
-	unsigned i, j;
+//void CResultsModel::saveDischargesXML(TiXmlElement*& root, const CDischarges* disch)
+//{
+//	unsigned countRecords = disch->m_MP[0].size();
+//	unsigned countChannels = disch->GetCountChannels();
+//	unsigned i, j;
 
-	TiXmlElement* subroot = new TiXmlElement("Discharges");
-	TiXmlElement* elemDisch;
-	TiXmlElement* channel;
+//	TiXmlElement* subroot = new TiXmlElement("Discharges");
+//	TiXmlElement* elemDisch;
+//	TiXmlElement* channel;
 
-	root->LinkEndChild(subroot);
-	for (i = 0; i < countChannels; i++)
-	{
-		channel = new TiXmlElement("Channel");
-		subroot->LinkEndChild(channel);
-		channel->SetAttribute("number", i);
+//	root->LinkEndChild(subroot);
+//	for (i = 0; i < countChannels; i++)
+//	{
+//		channel = new TiXmlElement("Channel");
+//		subroot->LinkEndChild(channel);
+//		channel->SetAttribute("number", i);
 
-		for (j = 0; j < countRecords; j++)
-		{
-			elemDisch = new TiXmlElement("Disch");
-			channel->LinkEndChild(elemDisch);
+//		for (j = 0; j < countRecords; j++)
+//		{
+//			elemDisch = new TiXmlElement("Disch");
+//			channel->LinkEndChild(elemDisch);
 
-			elemDisch->SetAttribute("number", j);
-			elemDisch->SetDoubleAttribute("MV", disch->m_MV[i].at(j));
-			elemDisch->SetDoubleAttribute("MA", disch->m_MA[i].at(j));
-			elemDisch->SetDoubleAttribute("MP", disch->m_MP[i].at(j));
-			elemDisch->SetDoubleAttribute("MD", disch->m_MD[i].at(j));
-			elemDisch->SetDoubleAttribute("MW", disch->m_MW[i].at(j));
-			elemDisch->SetDoubleAttribute("MPDF", disch->m_MPDF[i].at(j));
-		}
-	}
-}
-
-/// Load results: @see #CDetectorOutput and @see #CDischarges from XML file.
-void CResultsModel::LoadResultsXML(const wchar_t* fileName, CDetectorOutput*& out, CDischarges*& disch)
-{
-	char buffer[2048];
-	convertWCHARTtoCHAR(buffer, fileName);
-	LoadResultsXML(buffer, out, disch);
-}
+//			elemDisch->SetAttribute("number", j);
+//			elemDisch->SetDoubleAttribute("MV", disch->m_MV[i].at(j));
+//			elemDisch->SetDoubleAttribute("MA", disch->m_MA[i].at(j));
+//			elemDisch->SetDoubleAttribute("MP", disch->m_MP[i].at(j));
+//			elemDisch->SetDoubleAttribute("MD", disch->m_MD[i].at(j));
+//			elemDisch->SetDoubleAttribute("MW", disch->m_MW[i].at(j));
+//			elemDisch->SetDoubleAttribute("MPDF", disch->m_MPDF[i].at(j));
+//		}
+//	}
+//}
 
 /// Load results: @see #CDetectorOutput and @see #CDischarges from XML file.
-void CResultsModel::LoadResultsXML(const char* fileName, CDetectorOutput*& out, CDischarges*& disch)
-{
-	TiXmlDocument doc(fileName);
-	bool loadOk = doc.LoadFile();
-	TiXmlElement* pRoot;
+//void CResultsModel::LoadResultsXML(const wchar_t* fileName, CDetectorOutput*& out, CDischarges*& disch)
+//{
+//	char buffer[2048];
+//	convertWCHARTtoCHAR(buffer, fileName);
+//	LoadResultsXML(buffer, out, disch);
+//}
 
-	if (!loadOk)
-		throw new CException(wxT("Error loading XML file with results!"), wxT("CResultsModel::LoadResultsXML"));
+/// Load results: @see #CDetectorOutput and @see #CDischarges from XML file.
+//void CResultsModel::LoadResultsXML(const char* fileName, CDetectorOutput*& out, CDischarges*& disch)
+//{
+//	TiXmlDocument doc(fileName);
+//	bool loadOk = doc.LoadFile();
+//	TiXmlElement* pRoot;
 
-	pRoot = doc.FirstChildElement("spikedetector");
-	if (!pRoot)
-		throw new CException(wxT("Cannot find the element \'spikedetector\'in input file!"), wxT("CResultsModel::LoadResultsXML"));
+//	if (!loadOk)
+//		throw new CException(wxT("Error loading XML file with results!"), wxT("CResultsModel::LoadResultsXML"));
 
-	loadDetectorOutputXML(pRoot, out);
-	loadDischargesXML(pRoot, disch);
-}
+//	pRoot = doc.FirstChildElement("spikedetector");
+//	if (!pRoot)
+//		throw new CException(wxT("Cannot find the element \'spikedetector\'in input file!"), wxT("CResultsModel::LoadResultsXML"));
+
+//	loadDetectorOutputXML(pRoot, out);
+//	loadDischargesXML(pRoot, disch);
+//}
 
 /// Load data to @see #CDetectorOutput
-void CResultsModel::loadDetectorOutputXML(TiXmlElement*& root, CDetectorOutput*& out)
-{
-	TiXmlElement* 	 pOut, * pElem;
-	double  	  	 pos, dur, con, weight, pdf;
-	long    	  	 chan;
-	wxString 	  	 tmp;
-	bool             err = false;
+//void CResultsModel::loadDetectorOutputXML(TiXmlElement*& root, CDetectorOutput*& out)
+//{
+//	TiXmlElement* 	 pOut, * pElem;
+//	double  	  	 pos, dur, con, weight, pdf;
+//	long    	  	 chan;
+//	wxString 	  	 tmp;
+//	bool             err = false;
 	
-	CDetectorOutput* o = new CDetectorOutput();
+//	CDetectorOutput* o = new CDetectorOutput();
 
-	pOut = root->FirstChildElement("Output");
-	pElem = pOut->FirstChildElement("Position");
-	while (pElem)
-	{
-		tmp = wxString::FromUTF8(pElem->Attribute("pos"));
-		if (!tmp.ToDouble(&pos))
-			err = true;
-		tmp = wxString::FromUTF8(pElem->Attribute("chan"));
-		if (!tmp.ToLong(&chan))
-			err = true;
-		tmp = wxString::FromUTF8(pElem->Attribute("dur"));
-		if (!tmp.ToDouble(&dur))
-			err = true;
-		tmp = wxString::FromUTF8(pElem->Attribute("con"));
-		if (!tmp.ToDouble(&con))
-			err = true;
-		tmp = wxString::FromUTF8(pElem->Attribute("weight"));
-		if (!tmp.ToDouble(&weight))
-			err = true;
-		tmp = wxString::FromUTF8(pElem->Attribute("pdf"));
-		if (!tmp.ToDouble(&pdf))
-			err = true;
+//	pOut = root->FirstChildElement("Output");
+//	pElem = pOut->FirstChildElement("Position");
+//	while (pElem)
+//	{
+//		tmp = wxString::FromUTF8(pElem->Attribute("pos"));
+//		if (!tmp.ToDouble(&pos))
+//			err = true;
+//		tmp = wxString::FromUTF8(pElem->Attribute("chan"));
+//		if (!tmp.ToLong(&chan))
+//			err = true;
+//		tmp = wxString::FromUTF8(pElem->Attribute("dur"));
+//		if (!tmp.ToDouble(&dur))
+//			err = true;
+//		tmp = wxString::FromUTF8(pElem->Attribute("con"));
+//		if (!tmp.ToDouble(&con))
+//			err = true;
+//		tmp = wxString::FromUTF8(pElem->Attribute("weight"));
+//		if (!tmp.ToDouble(&weight))
+//			err = true;
+//		tmp = wxString::FromUTF8(pElem->Attribute("pdf"));
+//		if (!tmp.ToDouble(&pdf))
+//			err = true;
 		
-		if (err)
-		{
-			delete o;
-			throw new CException(wxT("Error loading data from file. Bad format of record!"), wxT("CResultsModel::loadDetectorOutput"));
-		}
+//		if (err)
+//		{
+//			delete o;
+//			throw new CException(wxT("Error loading data from file. Bad format of record!"), wxT("CResultsModel::loadDetectorOutput"));
+//		}
 
-		o->Add(pos, dur, chan, con, weight, pdf);
+//		o->Add(pos, dur, chan, con, weight, pdf);
 
-		pElem = pElem->NextSiblingElement("Position");
-	}
+//		pElem = pElem->NextSiblingElement("Position");
+//	}
 
-	out = o;
-}
+//	out = o;
+//}
 
 /// Load data to @see #CDischarges
-void CResultsModel::loadDischargesXML(TiXmlElement*& root, CDischarges*& disch)
-{
-	TiXmlElement* pDisch, * pElem, * pChannel;
-	unsigned 	  channels = 0, channel = 0;
-	double 		  MV, MA, MP, MD, MW, MPDF;
-	wxString 	  tmp;
-	CDischarges*  d;
-	bool 		  err = false;
+//void CResultsModel::loadDischargesXML(TiXmlElement*& root, CDischarges*& disch)
+//{
+//	TiXmlElement* pDisch, * pElem, * pChannel;
+//	unsigned 	  channels = 0, channel = 0;
+//	double 		  MV, MA, MP, MD, MW, MPDF;
+//	wxString 	  tmp;
+//	CDischarges*  d;
+//	bool 		  err = false;
 
-	pDisch = root->FirstChildElement("Discharges");
-	pChannel = pDisch->FirstChildElement("Channel");
+//	pDisch = root->FirstChildElement("Discharges");
+//	pChannel = pDisch->FirstChildElement("Channel");
 
-	// get count channels
-	while (pChannel)
-	{
-		channels++;
-		pChannel = pChannel->NextSiblingElement("Channel");
-	}
+//	// get count channels
+//	while (pChannel)
+//	{
+//		channels++;
+//		pChannel = pChannel->NextSiblingElement("Channel");
+//	}
 
-	// load data
-	d = new CDischarges(channels);
-	pChannel = pDisch->FirstChildElement("Channel");
-	while (pChannel)
-	{
-		pElem = pChannel->FirstChildElement("Disch");
-		while (pElem)
-		{
-			tmp = wxString::FromUTF8(pElem->Attribute("MV"));
-			if (!tmp.ToDouble(&MV))
-				err = true;
-			tmp = wxString::FromUTF8(pElem->Attribute("MA"));
-			if (!tmp.ToDouble(&MA))
-				err = true;
-			tmp = wxString::FromUTF8(pElem->Attribute("MP"));
-			if (tmp.IsSameAs("nan"))
-				MP = NAN;
-			else if (!tmp.ToDouble(&MP))
-				err = true;
-			tmp = wxString::FromUTF8(pElem->Attribute("MD"));
-			if (!tmp.ToDouble(&MD))
-				err = true;
-			tmp = wxString::FromUTF8(pElem->Attribute("MW"));
-			if (!tmp.ToDouble(&MW))
-				err = true;
-			tmp = wxString::FromUTF8(pElem->Attribute("MPDF"));
-			if (!tmp.ToDouble(&MPDF))
-				err = true;
+//	// load data
+//	d = new CDischarges(channels);
+//	pChannel = pDisch->FirstChildElement("Channel");
+//	while (pChannel)
+//	{
+//		pElem = pChannel->FirstChildElement("Disch");
+//		while (pElem)
+//		{
+//			tmp = wxString::FromUTF8(pElem->Attribute("MV"));
+//			if (!tmp.ToDouble(&MV))
+//				err = true;
+//			tmp = wxString::FromUTF8(pElem->Attribute("MA"));
+//			if (!tmp.ToDouble(&MA))
+//				err = true;
+//			tmp = wxString::FromUTF8(pElem->Attribute("MP"));
+//			if (tmp.IsSameAs("nan"))
+//				MP = NAN;
+//			else if (!tmp.ToDouble(&MP))
+//				err = true;
+//			tmp = wxString::FromUTF8(pElem->Attribute("MD"));
+//			if (!tmp.ToDouble(&MD))
+//				err = true;
+//			tmp = wxString::FromUTF8(pElem->Attribute("MW"));
+//			if (!tmp.ToDouble(&MW))
+//				err = true;
+//			tmp = wxString::FromUTF8(pElem->Attribute("MPDF"));
+//			if (!tmp.ToDouble(&MPDF))
+//				err = true;
 
-			if (err)
-			{
-				delete d;
-				throw new CException(wxT("Error loading data from file. Bad format of record!"), wxT("CResultsModel::loadDischarges"));
-			}
+//			if (err)
+//			{
+//				delete d;
+//				throw new CException(wxT("Error loading data from file. Bad format of record!"), wxT("CResultsModel::loadDischarges"));
+//			}
 
-			d->m_MV[channel].push_back(MV);
-			d->m_MA[channel].push_back(MA);
-			d->m_MP[channel].push_back(MP);
-			d->m_MD[channel].push_back(MD);
-			d->m_MW[channel].push_back(MW);
-			d->m_MPDF[channel].push_back(MPDF);
+//			d->m_MV[channel].push_back(MV);
+//			d->m_MA[channel].push_back(MA);
+//			d->m_MP[channel].push_back(MP);
+//			d->m_MD[channel].push_back(MD);
+//			d->m_MW[channel].push_back(MW);
+//			d->m_MPDF[channel].push_back(MPDF);
 
-			pElem = pElem->NextSiblingElement("Disch");
-		}
+//			pElem = pElem->NextSiblingElement("Disch");
+//		}
 
-		channel++;
-		pChannel = pChannel->NextSiblingElement("Channel");
-	}
+//		channel++;
+//		pChannel = pChannel->NextSiblingElement("Channel");
+//	}
 
-	disch = d;
-}
+//	disch = d;
+//}
 
 /// Convert WCHAR_T to CHAR. Is using for converting path of files.
 void CResultsModel::convertWCHARTtoCHAR(char out[2048], const wchar_t* in)

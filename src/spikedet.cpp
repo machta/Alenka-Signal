@@ -10,11 +10,11 @@ namespace
 
 class InputModel : public CInputModel
 {
-	SpikedetDataLoader* loader;
+	AbstractSpikedetLoader<SIGNALTYPE>* loader;
 	vector<SIGNALTYPE> buffer;
 
 public:
-	InputModel(int fs, SpikedetDataLoader* loader) : loader(loader)
+	InputModel(int fs, AbstractSpikedetLoader<SIGNALTYPE>* loader) : loader(loader)
 	{
 		m_fs = fs;
 		m_countSamples = loader->sampleCount();
@@ -69,10 +69,11 @@ Spikedet::~Spikedet()
 	detector = nullptr;
 }
 
-void Spikedet::runAnalysis(SpikedetDataLoader* loader, CDetectorOutput* out, CDischarges* discharges)
+void Spikedet::runAnalysis(AbstractSpikedetLoader<SIGNALTYPE>* loader, CDetectorOutput* out, CDischarges* discharges)
 {
 	unique_ptr<wxEvtHandler> eventHandler(new wxEvtHandler);
 	eventHandler->progress = &progressCurrent;
+	progressCurrent = 0;
 
 	unique_ptr<CInputModel> model(new InputModel(fs, loader));
 

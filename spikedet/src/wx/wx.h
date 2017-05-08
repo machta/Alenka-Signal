@@ -23,20 +23,28 @@ public:
 	wxString(const char* str) : std::string(str) {}
 
 	template<class... T>
-	int Printf(const wxString& pszFormat, T... p)
+	int Printf(const wxString& format, T... args)
 	{
-		const char* format = pszFormat.c_str();
+		const char* formatStr = format.c_str();
 
-		int size1 = snprintf(nullptr, 0, format, p...);
+		int size1 = snprintf(nullptr, 0, formatStr, args...);
 
 		std::unique_ptr<char[]> buffer(new char[size1 + 1]);
 
-		int size2 = sprintf(buffer.get(), format, p...);
+		int size2 = sprintf(buffer.get(), formatStr, args...);
 		assert(size1 == size2); (void)size2;
 
 		assign(buffer.get(), buffer.get() + size1);
 
 		return size1;
+	}
+
+	template<class... T>
+	static wxString Format(const wxString& format, T... args)
+	{
+		wxString str;
+		str.Printf(format, args...);
+		return str;
 	}
 };
 
