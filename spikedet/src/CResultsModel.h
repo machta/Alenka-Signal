@@ -3,7 +3,8 @@
 
 #include "CSpikeDetector.h"
 //#include "lib/tinyxml/tinyxml.h"
-#include <matio.h>
+
+typedef struct _mat_t mat_t;
 
 /**
  * Static class for saving and loading results of the detector.

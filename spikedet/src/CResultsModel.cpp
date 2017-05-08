@@ -1,5 +1,7 @@
 #include "CResultsModel.h"
 
+#include <matio.h>
+
 /// A constructor.
 CResultsModel::CResultsModel()
 {
