@@ -630,8 +630,18 @@ wxThread::ExitCode COneChannelDetect::Entry()
 		}
 		catch(alglib::ap_error e)
 		{
-			//cout << "Aglib msg: " << e.msg.c_str() << endl;
-			return NULL;
+			std::cerr << "Aglib warning: " << e.msg.c_str() << std::endl;
+			//return NULL;
+			// This NULL returned after the exception caused the error for the 130 channel file
+			// that has one channel with all zeroes. So, rather than to return an empty result,
+			// fill it with zeroes.
+
+			assert(yrealMedian.length() == yrealStd.length());
+			assert(retMedian.length() == 0 && retStd.length() == 0);
+
+			wxVector<double> allZeroes(yrealMedian.length());
+			retMedian.setcontent(allZeroes.size(), allZeroes.data());
+			retStd.setcontent(allZeroes.size(), allZeroes.data());
 		}
 
 		for (i = 0; i < retMedian.length(); i++)
