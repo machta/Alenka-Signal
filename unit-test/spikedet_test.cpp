@@ -3,6 +3,7 @@
 #include <AlenkaSignal/openclcontext.h>
 #include <AlenkaSignal/spikedet.h>
 #include <AlenkaFile/edf.h>
+#include <AlenkaFile/mat.h>
 
 #include <functional>
 #include <memory>
@@ -210,24 +211,16 @@ TEST(spikedet_test, index_bug)
 	EXPECT_NO_THROW(printException([&] () { test(&loader, file.getSamplingFrequency(), true); }));
 }
 
-TEST(spikedet_test, zeroChannel_bug0)
+TEST(spikedet_test, zeroChannel_bug)
 {
 	// This tests the strange case when you get nan values and it causes an exception.
-	EDF file(PATH + "zeroChannel.edf");
+	MATvars vars;
+	vars.data = "d";
+	vars.frequency = "fs";
+
+	MAT file(PATH + "zero-channel.mat", vars);
 	FileSpikedetLoader<SIGNALTYPE> loader(&file);
 	EXPECT_NO_THROW(printException([&] () { test(&loader, file.getSamplingFrequency(), true); }));
-}
-
-TEST(spikedet_test, zeroChannel_bug1)
-{
-	// This test does not appear to be effective in reproducing the bug, but I will keep it all the same.
-	int len = 100000;
-	vector<SIGNALTYPE> signal(3*len);
-	for (int i = len; i < 2*len; i++)
-		signal[i] = i;
-
-	VectorSpikedetLoader<SIGNALTYPE> loader(signal, 3);
-	EXPECT_NO_THROW(printException([&] () { test(&loader, 200, true); }));
 }
 
 // TODO: Add test that repeatedly runs the analysis using a single instance of Spikedet class.
