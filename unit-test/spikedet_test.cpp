@@ -215,7 +215,7 @@ TEST(spikedet_test, zeroChannel_bug)
 {
 	// This tests the strange case when you get nan values and it causes an exception.
 	MATvars vars;
-	vars.data = "d";
+	vars.data = vector<string>{"d"};
 	vars.frequency = "fs";
 
 	MAT file(PATH + "zero-channel.mat", vars);
