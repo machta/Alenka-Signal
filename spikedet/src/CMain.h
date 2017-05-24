@@ -15,10 +15,7 @@
 #ifndef CMain_H
 #define	CMain_H
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
+#include "wx/wx.h"
 
 #include "CMainFrame.h"
 #include "CInputModelEDF.h"

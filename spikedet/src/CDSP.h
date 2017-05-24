@@ -1,11 +1,8 @@
 #ifndef CDSP_H
 #define CDSP_H
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
-#include <wx/thread.h>
+#include "wx/wx.h"
+#include "wx/thread.h"
 
 #include <algorithm>
 #include <exception>
@@ -13,13 +10,13 @@
 #include <complex>
 #include <cmath>
 #include <string.h>
-#include <cstdlib> 
+#include <cstdlib>
 
 #include "CException.h"
 #include "Definitions.h"
 
 /// long double PI value specifications
-#define PId	3.141592653589793238462643383279502884L 
+#define PId	3.141592653589793238462643383279502884L
 /// float PI value specifications
 #define PIf	3.1415926535897932384626433832795f
 
@@ -128,18 +125,18 @@ public:
 
 private:
 	static void filt50Hz(wxVector<SIGNALTYPE>* data, const int& countChannels, const wxVector<double>& B, const wxVector<double>& A);
-	
+
 	/**
 	 * This method is based on functions from librtfilters \ref http://cnbi.epfl.ch/software/rtfilter.html
 	 */
 	static void getPoleCoefs(double p, double np, double fc, double r, int highpass, double a[3], double b[3]);
-	
+
 	/**
 	 * Compute Chebyshev coefficients. This method is based on functions from librtfilters \ref http://cnbi.epfl.ch/software/rtfilter.html
 	 */
 	static int computeChebyIir(double *num, double *den, unsigned int num_pole,
 							   int highpass, double ripple, double cutoff_freq);
-	
+
 	/**
 	 * Calculate coefficients for Butterworth filter.
 	 * @param coeff contains calculated coefficients.

@@ -1,10 +1,7 @@
 #ifndef CSettingsModel_H
 #define CSettingsModel_H
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
+#include "wx/wx.h"
 
 //#include "lib/tinyxml/tinyxml.h"
 #include "CException.h"

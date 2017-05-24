@@ -1,14 +1,9 @@
 #ifndef CException_H
 #define	CException_H
 
-#include <wx/wxprec.h>
-#include <wx/time.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
+#include "wx/wx.h"
 
 #include <exception>
-
 
 /**
  * Class representing exceptions in SpikeDetektor, inherist from std::exception

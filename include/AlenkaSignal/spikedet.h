@@ -27,6 +27,7 @@ public:
 	virtual int channelCount() = 0;
 };
 
+// TODO: Move this class to its own header.
 template<class T>
 class FileSpikedetLoader : public AbstractSpikedetLoader<T>
 {

@@ -1,7 +1,7 @@
 #ifndef SPIKEDETOUTPUT_H
 #define	SPIKEDETOUTPUT_H
 
-#include <wx/wx.h>
+#include "wx/wx.h"
 
 #include <vector>
 

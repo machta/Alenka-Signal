@@ -15,7 +15,7 @@ function download
 
 function md5
 {
-	md5sum -c --quiet $1
+	ls `cat $1 | awk '{print $2}'` && md5sum -c $1
 }
 
 data0=skipped

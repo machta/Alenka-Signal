@@ -1,11 +1,8 @@
 #ifndef CSpikeDetector_H
 #define	CSpikeDetector_H
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
-#include <wx/thread.h>
+#include "wx/wx.h"
+#include "wx/thread.h"
 
 #include <cstdlib>
 #include <cmath>

@@ -1,10 +1,7 @@
 #ifndef CInputModel_H
 #define	CInputModel_H
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
+#include "wx/wx.h"
 
 #include "CException.h"
 #include "Definitions.h"

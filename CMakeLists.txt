@@ -11,12 +11,6 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp")
-else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-		add_definitions(-D_GLIBCXX_DEBUG)
-	endif()
 endif()
 
 find_package(OpenCL)
@@ -24,14 +18,13 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Alenka-File
 set(Boost_INCLUDE_DIR "")
-get_filename_component(ALENKA_FILE_DIR ../Alenka-File REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
-include_directories(${ALENKA_FILE_DIR}/include ${ALENKA_FILE_DIR}/boost)
+include_directories(${Alenka-File_SOURCE_DIR}/include ${Alenka-File_SOURCE_DIR}/boost)
 
 # First build all the library dependencies.
 set(BUILD_LOADLIBRARIES off CACHE BOOL "")
 set(BUILD_EXAMPLES off CACHE BOOL "")
 add_subdirectory(clFFT/src)
-include_directories(clFFT/src/include ${CMAKE_BINARY_DIR}/clFFT/src/include)
+include_directories(clFFT/src/include ${Alenka-Signal_BINARY_DIR}/clFFT/src/include)
 
 # If you want to use this library, you need to link to these libraries.
 set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
