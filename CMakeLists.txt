@@ -30,39 +30,34 @@ include_directories(clFFT/src/include ${Alenka-Signal_BINARY_DIR}/clFFT/src/incl
 set(LIBS_TO_LINK_ALENKA_SIGNAL alenka-signal clFFT ${OpenCL_LIBRARIES})
 set(LIBS_TO_LINK_ALENKA_SIGNAL ${LIBS_TO_LINK_ALENKA_SIGNAL} PARENT_SCOPE)
 
-# The library.
-file(GLOB SRC1 src/* include/AlenkaSignal/*.h spikedet/src/*.h spikedet/src/wx/*.h SignalResampler/src/resample.cpp)
-file(GLOB SRC2 alglib/src/*.cpp)
-file(GLOB SRC3 libsamplerate/src/*.c)
-set(SRC_SD spikedet/src/CSpikeDetector.cpp spikedet/src/CDSP.cpp spikedet/src/CException.cpp)
-add_library(alenka-signal STATIC ${SRC1} ${SRC2} ${SRC3} ${SRC_SD})
-
-if(MSVC)
-	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-W4")
-else()
-	set_source_files_properties(${SRC1} PROPERTIES COMPILE_FLAGS "-Wall -pedantic")# -Wextra -Wconversion")
-
-	#SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} --coverage")
-	#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-endif()
-
+# Alenka-Signal library.
 include_directories(include alglib/src eigen libsamplerate/src spikedet/src SignalResampler/src)
+
+file(GLOB SRC_ALG alglib/src/*.cpp)
+file(GLOB SRC_SR libsamplerate/src/*.c)
+set(SRC_SD spikedet/src/CSpikeDetector.cpp spikedet/src/CDSP.cpp spikedet/src/CException.cpp)
+
+set(SRC
+	include/AlenkaSignal/filter.h
+	include/AlenkaSignal/filterprocessor.h
+	include/AlenkaSignal/montage.h
+	include/AlenkaSignal/montageprocessor.h
+	include/AlenkaSignal/openclcontext.h
+	include/AlenkaSignal/openclprogram.h
+	include/AlenkaSignal/spikedet.h
+	src/filter.cpp
+	src/filterprocessor.cpp
+	src/filtfilt.h
+	src/kernels.cl
+	src/montage.cpp
+	src/montageprocessor.cpp
+	src/openclcontext.cpp
+	src/openclprogram.cpp
+	src/spikedet.cpp
+)
+
+add_library(alenka-signal STATIC ${SRC} ${SRC_ALG} ${SRC_SR} ${SRC_SD} SignalResampler/src/resample.cpp)
 
 if(BUILD_TESTS_ALENKA_SIGNAL)
 	add_subdirectory(unit-test)
-endif()
-
-# Install rule.
-file(GLOB HEADERS include/AlenkaSignal/*)
-
-if(BUILD_CLFFT)
-	add_custom_target(install-alenka-signal
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:clFFT> $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${HEADERS} ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal)
-else()
-	add_custom_target(install-alenka-signal
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:alenka-signal> ${CMAKE_INSTALL_PREFIX}/lib
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${HEADERS} ${CMAKE_INSTALL_PREFIX}/include/AlenkaSignal)
 endif()

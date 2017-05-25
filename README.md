@@ -1,5 +1,7 @@
 # Alenka-Signal
 
+This repo has been merged the [parent project](https://github.com/machta/Alenka).
+
 ### Requirments
 * git
 * cmake 3.1 (for Ubuntu 14 download the latest version)
