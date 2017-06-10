@@ -1,6 +1,6 @@
 # Alenka-Signal
 
-This repo has been merged the [parent project](https://github.com/machta/Alenka).
+This repo has been merged with the parent project [Alenka](https://github.com/machta/Alenka).
 
 ### Requirments
 * git
